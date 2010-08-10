@@ -18,16 +18,10 @@ def application_setup():
   this should only be once _ever_. if for some reason the db gets
   deleted then this should be rerun
   """
-  # Groups + Rights
-  viewers = Group(name="Viewers")
-  viewers.put()
-  editors = Group(name="Editors")
-  editors.put()
-  managers = Group(name="Managers")
-  managers.put()
-  managers_rights = Right(name="RESOURCE_MANAGER",holders=[managers.key()])
+  # Shared Application Rights
+  managers_rights = Right(name="RESOURCE_MANAGER")
   managers_rights.put()
-  editors_rights = Right(name="RESOURCE_EDITOR",holders=[editors.key(),managers.key()])
+  editors_rights = Right(name="RESOURCE_EDITOR")
   editors_rights.put()
 
 def domain_setup():

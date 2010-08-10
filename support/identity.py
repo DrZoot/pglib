@@ -8,29 +8,42 @@ Support functions for identity - user operations
 """
 from model.identity import Identity
 from model.group import Group
+from model.domain import Domain
 from google.appengine.api import users
 
 def user_identity(user=None):
   """create or retrieve an identity for the current user"""
   if not user:
     user = users.get_current_user()
-  identity_query = Identity.all().filter('user',user)
-  if identity_query.count() > 0:
-    return identity_query.get()
-  else:
-    new_id = Identity(user=user)
-    new_id.put()
-    # add to default groups
-    viewers = Group.all().filter('name','Viewers').get()
-    viewers.members.append(new_id.key())
-    viewers.put()
-    return new_id
+  identity = Identity.all().filter('user',users.get_current_user()).get()
+  return identity
     
-def user_domain(user=None):
-  """return the domain of the current user (everything after the @)"""
+def create_identity(user=None):
+  """create an identity for a user (defaults to current)"""
+  if not user:
+    user = users.get_current_user()
+  domain = user_domain()
+  identity = Identity(user=user,domain=domain)
+  identity.put()
+  # add to default groups
+  viewers = Group.all().filter('domain',domain).filter('name','Viewers').get()
+  viewers.members.append(identity.key())
+  viewers.put()
+    
+def user_domain_name(user=None):
+  """return the domain name of the current user (everything after the @)"""
   if not user:
     user = users.get_current_user()
   email = user.email()
-  domain = email.split('@')[1]
+  domain_name = email.split('@')[1]
+  return domain_name
+  
+def user_domain(user=None):
+  """return the domain object of the given user (defaults to current)"""
+  if not user:
+    user = users.get_current_user()
+  domain_name = user_domain_name()
+  domain = Domain.all().filter('name',domain_name).get()
   return domain
+  
   
