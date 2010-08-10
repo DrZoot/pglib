@@ -1,0 +1,4 @@
+import sys; sys.__plen = len(sys.path)
+./Cheetah-2.4.2.1-py2.5-macosx-10.6-i386.egg
+./Markdown-2.0.3-py2.5.egg
+import sys; new=sys.path[sys.__plen:]; del sys.path[sys.__plen:]; p=getattr(sys,'__egginsert',0); sys.path[p:p]=new; sys.__egginsert = p+len(new)
