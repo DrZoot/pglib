@@ -11,6 +11,10 @@ from model.group import Group
 from model.domain import Domain
 from google.appengine.api import users
 
+def is_current_user_admin():
+  """Just calls users.is_current_user_admin()"""
+  return users.is_current_user_admin()
+
 def user_identity(user=None):
   """create or retrieve an identity for the current user"""
   if not user:
