@@ -1,0 +1,19 @@
+#include "templates/page_base.html"
+
+#def body
+<form action="/management/users/edit" method="post" accept-charset="utf-8">
+  <input type="hidden" name="key" value="$key" id="key">
+  #if $generic_error
+    <p>$generic_error</p>
+  #end if
+  <label for="email_address">Email Address:</label><input type="email" name="email" value="$email" id="email"><br/>
+  #if $email_error
+    <p>$email_error</p>
+  #end if
+  <label for="name">Name:</label><input type="text" name="name" value="$name" id="name">
+  #if $name_error
+    <p>$name_error</p>
+  #end if
+  <p><input type="submit" value="Edit"></p>
+</form>
+#end def

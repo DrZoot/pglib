@@ -1,0 +1,32 @@
+#include "templates/page_base.html"
+
+#def head
+<title>User List for $domain_name</title>
+#end def
+
+#def body
+<a href='/management/users/create'>Create User</a>
+<table border="1">
+  <tr><th>Email Address</th><th>Name</th><th>Domain FQDN</th><th></th><th></th></tr>
+  #for $identity in $domain_identities
+    <tr>
+      <td><%= identity.user.email() %></td>
+      <td><%= identity.name %></td>
+      <td><%= identity.domain.fqdn %></td>
+      <td>
+        <form action="/management/users/edit" method="get" accept-charset="utf-8">
+          <input type="hidden" name="key" value="<%= identity.key() %>" id="key">
+          <input type="submit" value="edit">
+        </form>
+      </td>
+      <td>
+        <form action="/management/users/delete" method="post" accept-charset="utf-8">
+          <input type="hidden" name="key" value="<%= identity.key() %>" id="key">
+          <input type="submit" value="Delete">
+        </form>
+      </td>
+    </tr>
+  #end for
+</table>
+#end def
+
