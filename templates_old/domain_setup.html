@@ -1,0 +1,11 @@
+#set $page_title = "Domain Setup"
+
+#include 'templates/page_base.html'
+
+#def body
+<p>Setup Domain</p>
+<form action="/setup" method="post" accept-charset="utf-8">
+  <label for="domain_name">Domain Name:</label><input type="text" name="domain_name" value="$domain_name" id="domain_name">
+  <p><input type="submit" value="Setup &rarr;"></p>
+</form>
+#end def

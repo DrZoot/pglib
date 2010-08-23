@@ -1,0 +1,41 @@
+#include 'templates/page_base.html'
+
+#def head
+<title>Resource List</title>
+#end def
+
+#def body
+<p>Resource List</p>
+#if $manager
+  <a href="/resources/create">Create Resource</a>
+#end if
+<table border="1">
+  <tr>
+    <th>Name</th><th>Description</th>
+    #if $manager
+      <th>Edit</th><th>Delete</th>
+    #end if
+  </tr>
+  #for $resource in $resources
+    <tr>
+      <td><%= resource.name %></td><td><%= resource.description %></td>
+      #if $manager
+        <td>
+          <form action="/resources/edit" method="get" accept-charset="utf-8">
+            
+          <input type="hidden" name="key" value="<%= str(resource.key()) %>" id="key">
+          <input type="submit" value="Edit">
+          </form>
+        </td>
+        <td>
+          <form action="/resources/delete" method="post" accept-charset="utf-8">
+            <input type="hidden" name="key" value="<%= str(resource.key()) %>" id="key">
+
+            <input type="submit" value="Delete">
+          </form>
+        </td>
+      #end if
+    </tr>
+  #end for
+</table>
+#end def
