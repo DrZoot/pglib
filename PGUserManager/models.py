@@ -9,49 +9,55 @@ Models for PGUserManager
 """
 from google.appengine.ext import db
 
-# Group Model
-"""
-Name: Group
-Properties:
-Name : String : The name of the group. Must be unique.
-Description: String: A description for this group, optional.
-"""
+class Group (db.Model):
+  """
+  --Description--
+  Stores a group.
+  --Properties--
+  Name : StringProperty : The name of the group, must be unique, cannot be administrators, users.
+  Description : TextProperty : Optional group description.
+  """
+  
+class Permission (db.Model):
+  """
+  --Description--
+  Stores a permission. (A permission is just a text key, your either associated or your not).
+  --Properties--
+  Name : StringProperty : The name of the property, must be unique.
+  Description : TextProperty : Optional property description.
+  """
 
-# Permission Model
-"""
-Name: Permission
-Properties:
-Name : String : The name of the Permission. Must be unique.
-Description : String : A description for the permission, optional.
-"""
+class PermissionBinding (db.PolyModel):
+  """
+  --Description--
+  Parent class for permission binding objects. Represents relationships between permissions and groups / users.
+  --Properties--
+  Permission : ReferenceProperty(Permission) : A reference to the permission being bound.
+  """
+  
+class GroupPermissionBinding (PermissionBinding):
+  """
+  --Description--
+  Child of PermissionBinding that represents the binding between a permission and a group.
+  --Properties--
+  Permission (INHERITED)
+  Group : ReferenceProperty(Group) : The group the permission is being bound to.
+  """
+  
+class UserPermissionBinding (PermissionBinding):
+  """
+  --Description--
+  Child of permission binding that represents the binding between a permission and a user.
+  --Properties--
+  Permission (INHERITED)
+  User : UserProperty : The ser the permission is being bound to.
+  """
 
-# Permission Binding Model (Polymorphic)
-"""
-Name: PermissionBinding
-Properties:
-Permission : Key : The key for the permission that this binding applies to.
-"""
-# Group Permission Binding Model
-"""
-Name: GroupPermissionBinding
-Inherits from Permission Binding
-Properties:
-Group : Key : The key for the group that this permission binds to.
-(Inherited) Permission : Key : See parent.
-"""
-# User Permission Binding Model
-"""
-Name: UserPermissionBinding
-Inherits from Permission Binding
-Properties:
-User : User : The user that this permission binds to.
-(Inherited) Permission : Key : See parent.
-"""
-
-# Membership Binding Model
-"""
-Name: GroupMembershipBinding
-Properties:
-User : User : The user that is bound.
-Group : Key : The group they are bound to.
-"""
+class MembershipBinding (db.Model):
+  """
+  --Description--
+  Object for storing user group membership.
+  --Properties--
+  User : UserProperty : The user to be bound.
+  Group : ReferenceProperty : The group to be bound.
+  """
