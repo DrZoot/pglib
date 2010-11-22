@@ -17,6 +17,8 @@ class Group (db.Model):
   Name : StringProperty : The name of the group, must be unique, cannot be administrators, users.
   Description : TextProperty : Optional group description.
   """
+  name = db.StringProperty(required=True)
+  description = db.TextProperty()
   
 class Permission (db.Model):
   """
@@ -26,38 +28,37 @@ class Permission (db.Model):
   Name : StringProperty : The name of the property, must be unique.
   Description : TextProperty : Optional property description.
   """
-
-class PermissionBinding (db.PolyModel):
+  name = StringProperty(required=True)
+  description = TextProperty()
+  
+class Identity (db.Expando):
   """
   --Description--
-  Parent class for permission binding objects. Represents relationships between permissions and groups / users.
+  Stores a users information and mapping to a user object. Also used to represent users as datastore objects.
+  Also stores arbitrary user information.
+  --Properties--
+  User : UserProperty : A user object.
+  """
+  user = UserProperty(required=True)
+
+class PermissionBinding (db.Model):
+  """
+  --Description--
+  Represents relationships between permissions and groups / users.
   --Properties--
   Permission : ReferenceProperty(Permission) : A reference to the permission being bound.
+  Subject : ReferenceProperty : A reference to the item being bound to the permission. Must be either a group or an identity.
   """
-  
-class GroupPermissionBinding (PermissionBinding):
-  """
-  --Description--
-  Child of PermissionBinding that represents the binding between a permission and a group.
-  --Properties--
-  Permission (INHERITED)
-  Group : ReferenceProperty(Group) : The group the permission is being bound to.
-  """
-  
-class UserPermissionBinding (PermissionBinding):
-  """
-  --Description--
-  Child of permission binding that represents the binding between a permission and a user.
-  --Properties--
-  Permission (INHERITED)
-  User : UserProperty : The ser the permission is being bound to.
-  """
+  permission = ReferenceProperty(reference_class=Permission,required=True)
+  subject = ReferenceProperty(required=True)
 
 class MembershipBinding (db.Model):
   """
   --Description--
   Object for storing user group membership.
   --Properties--
-  User : UserProperty : The user to be bound.
+  Identity : ReferenceProperty : The user identity to be bound.
   Group : ReferenceProperty : The group to be bound.
   """
+  identity = ReferenceProperty(required=True,reference_class=Identity)
+  group = ReferenceProperty(required=True,reference_class=Group)
