@@ -18,7 +18,7 @@ class Group (db.Model):
   Description : TextProperty : Optional group description.
   """
   name = db.StringProperty(required=True)
-  description = db.TextProperty()
+  description = db.TextProperty(default="")
   
 class Permission (db.Model):
   """
@@ -29,7 +29,7 @@ class Permission (db.Model):
   Description : TextProperty : Optional property description.
   """
   name = StringProperty(required=True)
-  description = TextProperty()
+  description = TextProperty(default="")
   
 class Identity (db.Expando):
   """
