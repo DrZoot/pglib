@@ -40,9 +40,9 @@ class Identity (db.Expando):
     Return a list of permissions which this identity has through its group memberships.
     """
     permissions = []
-    for membership_binding in self.membershipbinding_set:
-      bound_group = membership_binding.group
-      for permission_binding in bound_group.permissionbinding_set:
+    for membership in self.group_bindings:
+      bound_group = membership.group
+      for permission_binding in bound_group.permission_bindings:
         permissions.append(permission_binding.permission)
     return list(set(permissions))
     
@@ -51,7 +51,7 @@ class Identity (db.Expando):
     Return a list of permissions this user has both through group and user permissions.
     """
     permissions = self.get_group_permissions()
-    for permission_binding in self.permissionbinding_set:
+    for permission_binding in self.permission_bindings:
       permissions.append(permission_binding.permission)
     return list(set(permissions))
     
@@ -66,11 +66,9 @@ class Identity (db.Expando):
     if isinstance(perm,basestring):
       perm = Permission.all.filter('name',perm).get()
     if not perm:
-      # raise no such permission (perm_name)
-      pass
+      raise Exception('Permission does not exist')
     if not isinstance(perm,db.Model):
-      #raise must pass name or object (perm)
-      pass
+      raise Exception('Method requires valid name or permission object ')
     if not ident_perm_list:
       ident_perm_list = self.get_all_permissions()
     if perm in ident_perm_list:
@@ -87,9 +85,7 @@ class Identity (db.Expando):
       if not self.has_permission(perm,ident_perm_list=ident_perm_list):
         return False
     return True
-  
 
-  
 class Group (db.Model):
   """
   --Description--
@@ -117,7 +113,7 @@ class Group (db.Model):
     Return a list of permissions this user has both through group and user permissions.
     """
     permissions = []
-    for permission_binding in self.permissionbinding_set:
+    for permission_binding in self.permission_bindings:
       permissions.append(permission_binding.permission)
     return list(set(permissions))
 
@@ -132,11 +128,9 @@ class Group (db.Model):
     if isinstance(perm,basestring):
       perm = Permission.all.filter('name',perm).get()
     if not perm:
-      # raise no such permission (perm_name)
-      pass
+      raise Exception('Permission does not exist')
     if not isinstance(perm,db.Model):
-      #raise must pass name or object (perm)
-      pass
+      raise Exception('Method requires valid name or permission object ')
     if not ident_perm_list:
       ident_perm_list = self.get_all_permissions()
     if perm in ident_perm_list:
@@ -159,17 +153,25 @@ class Group (db.Model):
     Return a list of identities attached to this group.
     """
     members = []
-    for membership_binding in self.meembershipbinding_set:
-      members.append(membership_binding.identity)
+    for identity_binding in self.identity_bindings:
+      members.append(identity_binding.identity)
     return members
     
   def has_member(self,ident):
     """Return true if the given identity is part of this group"""
-    pass
+    query = self.identity_bindings.filter('identity',ident)
+    if query.get():
+      return True
+    else:
+      return False
     
   def has_members(self,idents):
     """Return true if all of the given identities are part of this group"""
-    pass
+    ident
+    # is there anyway to do this without making one request per incoming identity?
+    # i did the same thing with permissions but didnt think that there would ever be
+    # large numbers of permissions, its almost a gurantee that there will be large numbers
+    # of users. what about if I retrieve a list of the groups identities
     
   
 class Permission (db.Model):
@@ -191,6 +193,17 @@ class Permission (db.Model):
     # Delete all permission bindings
     db.delete(self.owner_bindings)
     super(Permission, self).delete()
+    
+  def associated_with(self,subject_key):
+    if isinstance(subject_key,db.Key):
+      subject = Identity.get(subject_key) or Group.get(subject_key)
+    else:
+      raise Exception('Must pass a key of type db.Key')
+    query = self.owner_bindings.filter('subject',subject)
+    if query.get():
+      return True
+    else:
+      return False
 
 class PermissionBinding (db.Model):
   """
