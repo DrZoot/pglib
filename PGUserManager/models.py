@@ -42,8 +42,7 @@ class Identity (db.Expando):
     for membership_binding in self.membershipbinding_set:
       bound_group = membership_binding.group
       for permission_binding in bound_group.permissionbinding_set:
-        bound_permission = permission_binding.permission
-        permissions.append(bound_permission)
+        permissions.append(permission_binding.permission)
     return list(set(permissions))
     
   def get_all_permissions(self):
@@ -55,12 +54,13 @@ class Identity (db.Expando):
       permissions.append(permission_binding.permission)
     return list(set(permissions))
     
-  def has_perm(self,perm):
+  def has_permission(self,perm,ident_perm_list=None):
     """
     Return true if the user has the specified permission. 
     Can be specified as a permission name (string) or the key of a permission (key). 
     Cannot be specified as a stringified permission key.
     If the user is inactive this always returns false
+    ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
     """
     if isinstance(perm,basestring):
       perm = Permission.all.filter('name',perm).get()
@@ -70,17 +70,20 @@ class Identity (db.Expando):
     if not isinstance(perm,db.Model):
       #raise must pass name or object (perm)
       pass
-    have_it = PermissionBinding.all.filter('permission',perm).filter('subject',self).get()
-    if not have_it:
+    if not ident_perm_list:
+      ident_perm_list = self.get_all_permissions()
+    if perm in ident_perm_list:
+      return True
+    else:
       return False
-    return True
     
-  def has_perms(self,perm_list):
+  def has_permissions(self,perm_list):
     """
-    Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_perm.
+    Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_permission.
     """
+    ident_perm_list = self.get_all_permissions()
     for perm in perm_list:
-      if not self.has_perm(perm):
+      if not self.has_permission(perm,ident_perm_list=ident_perm_list):
         return False
     return True
   
@@ -100,9 +103,71 @@ class Group (db.Model):
     --Description--
     Override the model delete method to remove any memebers of this group before it is deleted.
     """
+    # Delete Permission Bindings
+    db.delete(self.permissionbinding_set)
     # Delete Membership Bindings
     db.delete(self.membershipbinding_set)
     super(Group, self).delete()
+    
+  def get_all_permissions(self):
+    """
+    Return a list of permissions this user has both through group and user permissions.
+    """
+    permissions = []
+    for permission_binding in self.permissionbinding_set:
+      permissions.append(permission_binding.permission)
+    return list(set(permissions))
+
+  def has_permission(self,perm,ident_perm_list=None):
+    """
+    Return true if the user has the specified permission. 
+    Can be specified as a permission name (string) or the key of a permission (key). 
+    Cannot be specified as a stringified permission key.
+    If the user is inactive this always returns false
+    ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
+    """
+    if isinstance(perm,basestring):
+      perm = Permission.all.filter('name',perm).get()
+    if not perm:
+      # raise no such permission (perm_name)
+      pass
+    if not isinstance(perm,db.Model):
+      #raise must pass name or object (perm)
+      pass
+    if not ident_perm_list:
+      ident_perm_list = self.get_all_permissions()
+    if perm in ident_perm_list:
+      return True
+    else:
+      return False
+
+  def has_permissions(self,perm_list):
+    """
+    Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_perm.
+    """
+    ident_perm_list = self.get_all_permissions()
+    for perm in perm_list:
+      if not self.has_permission(perm,ident_perm_list=ident_perm_list):
+        return False
+    return True
+    
+  def get_all_members(self):
+    """
+    Return a list of identities attached to this group.
+    """
+    members = []
+    for membership_binding in self.meembershipbinding_set:
+      members.append(membership_binding.identity)
+    return members
+    
+  def has_member(self,ident):
+    """Return true if the given identity is part of this group"""
+    pass
+    
+  def has_members(self,idents):
+    """Return true if all of the given identities are part of this group"""
+    pass
+    
   
 class Permission (db.Model):
   """
@@ -145,3 +210,9 @@ class MembershipBinding (db.Model):
   """
   identity = db.ReferenceProperty(required=True,reference_class=Identity)
   group = db.ReferenceProperty(required=True,reference_class=Group)
+  
+class EmailUsageToken (db.Model):
+  """
+  Keys within a model must be unique. By exploiting that and specifying keys in the format email=user@email.net we can ensure no email address is used twice.
+  """
+  pass

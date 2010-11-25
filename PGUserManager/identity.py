@@ -21,20 +21,18 @@ db.delete(Bottom.all(keys_only=True).filter("daddy =", top).fetch(1000))
 # = Functions =
 # =============
 
-def create_identity(email_address, properties=None):
+def create_identity(email_address):
   """
   --Description--
-  Creates a new identity in the data store. If passed a dictionary of properties these are stored with the identity.
+  Creates a new identity in the data store. Returns the saved identity so that extra properties can be added.
   If given an identity that is already used then raises a EmailAddressAlreadyUsed exception with the name of the 
   existing identity as the argument.
   --Arguments--
   email_address : String : Mandatory string specifying the email address to use when creating the identity.
-  properties : Dictionary : Optional dictionary of key:value properties to store with the identity. Keys will become
-  property names and values will be converted to their equivalent data store type.
   --Returns--
   saved identity model object
   """
-  new_identity = models.Identity(email=email_address,user=)
+  return models.Identity(email=email_address,user=).put()
 
 def get_identity(email_address):
   """
@@ -44,27 +42,9 @@ def get_identity(email_address):
   """
   pass
   
-# ==============
-# = Exceptions =
-# ==============
-class IdentityDoesNotExist(Exception):
+def identity_query(*args,**kwargs):
   """
-  --Description--
-  Raised when an action is attempted on an identity that does not exist.
+  Equivalent to Identity.all(*args,**kwargs)
   """
-  def __init__(self,value):
-    self.value = value
+  return models.Identity.all(*args,**kwargs)
   
-  def __str__(self):
-    return repr(self.value)
-
-class AddressAlreadyUsed(Exception):
-  """
-  --Description--
-  Raised when an attempt is made to create an identity with an email address that is already is use.
-  """
-  def __init__(self,value):
-    self.value = value
-
-  def __str__(self):
-    return repr(self.value)
