@@ -10,14 +10,6 @@ Models for PGUserManager
 from google.appengine.ext import db
 import exceptions
 
-def validate_unique_email(email):
-  """
-  Given an email address ensure that it is not already used in an identity by checking that an object with the key_name does not already exist
-  """
-  # if Identity.get_by_key_name(email):
-  #   raise exceptions.AddressAlreadyUsed(email)
-  return email
-
 class Identity (db.Expando):
   """
   --Description--
@@ -27,8 +19,9 @@ class Identity (db.Expando):
   --Properties--
   User : UserProperty : A user object.
   """
-  user = db.UserProperty()
-  email = db.StringProperty(required=True,validator=validate_unique_email)
+  # user = db.UserProperty()
+  # TODO: email should be read only after the object is created as there is no good way to make sure it is unique on subsequent puts
+  email = db.StringProperty(required=True)
   active = db.BooleanProperty(default=True)
     
   def delete(self):
