@@ -8,6 +8,15 @@ Copyright 2010 Monotone Software. All rights reserved.
 Models for PGUserManager
 """
 from google.appengine.ext import db
+import exceptions
+
+def validate_unique_email(email):
+  """
+  Given an email address ensure that it is not already used in an identity by checking that an object with the key_name does not already exist
+  """
+  # if Identity.get_by_key_name(email):
+  #   raise exceptions.AddressAlreadyUsed(email)
+  return email
 
 class Identity (db.Expando):
   """
@@ -18,19 +27,18 @@ class Identity (db.Expando):
   --Properties--
   User : UserProperty : A user object.
   """
-  user = db.UserProperty(required=True)
-  email = db.StringProperty(required=True)
+  user = db.UserProperty()
+  email = db.StringProperty(required=True,validator=validate_unique_email)
   active = db.BooleanProperty(default=True)
-  
+    
   def delete(self):
     """
-    --Description--
     Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete.
     """
     # Delete Permission Bindings
-    db.delete(self.permissionbinding_set)
+    db.delete(self.permission_bindings)
     # Delete Group Bindings
-    db.delete(self.membershipbinding_set)
+    db.delete(self.group_bindings)
     super(Identity, self).delete()
     
   def get_group_permissions(self):
@@ -87,6 +95,8 @@ class Identity (db.Expando):
         return False
     return True
   
+
+  
 class Group (db.Model):
   """
   --Description--
@@ -104,9 +114,9 @@ class Group (db.Model):
     Override the model delete method to remove any memebers of this group before it is deleted.
     """
     # Delete Permission Bindings
-    db.delete(self.permissionbinding_set)
+    db.delete(self.permission_bindings)
     # Delete Membership Bindings
-    db.delete(self.membershipbinding_set)
+    db.delete(self.identity_bindings)
     super(Group, self).delete()
     
   def get_all_permissions(self):
@@ -186,7 +196,7 @@ class Permission (db.Model):
     Override model delete method to remove all permission bindings when a permission is deleted.
     """
     # Delete all permission bindings
-    db.delete(self.permissionbinding_set)
+    db.delete(self.owner_bindings)
     super(Permission, self).delete()
 
 class PermissionBinding (db.Model):
@@ -197,8 +207,8 @@ class PermissionBinding (db.Model):
   Permission : ReferenceProperty(Permission) : A reference to the permission being bound.
   Subject : ReferenceProperty : A reference to the item being bound to the permission. Must be either a group or an identity.
   """
-  permission = db.ReferenceProperty(reference_class=Permission,required=True)
-  subject = db.ReferenceProperty(required=True)
+  permission = db.ReferenceProperty(reference_class=Permission,required=True,collection_name='owner_bindings')
+  subject = db.ReferenceProperty(required=True,collection_name='permission_bindings')
 
 class MembershipBinding (db.Model):
   """
@@ -208,11 +218,5 @@ class MembershipBinding (db.Model):
   Identity : ReferenceProperty : The user identity to be bound.
   Group : ReferenceProperty : The group to be bound.
   """
-  identity = db.ReferenceProperty(required=True,reference_class=Identity)
-  group = db.ReferenceProperty(required=True,reference_class=Group)
-  
-class EmailUsageToken (db.Model):
-  """
-  Keys within a model must be unique. By exploiting that and specifying keys in the format email=user@email.net we can ensure no email address is used twice.
-  """
-  pass
+  identity = db.ReferenceProperty(required=True,reference_class=Identity,collection_name='group_bindings')
+  group = db.ReferenceProperty(required=True,reference_class=Group,collection_name='identity_bindings')

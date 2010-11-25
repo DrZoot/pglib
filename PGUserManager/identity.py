@@ -7,7 +7,6 @@ Copyright (c) 2010 Monotone Software. All rights reserved.
 Functions for manipulating identities
 """
 import models
-from google.appengine.api import User
 """
 http://stackoverflow.com/questions/1054868/recursive-delete-in-google-app-engine
 
@@ -23,28 +22,19 @@ db.delete(Bottom.all(keys_only=True).filter("daddy =", top).fetch(1000))
 
 def create_identity(email_address):
   """
-  --Description--
-  Creates a new identity in the data store. Returns the saved identity so that extra properties can be added.
-  If given an identity that is already used then raises a EmailAddressAlreadyUsed exception with the name of the 
-  existing identity as the argument.
-  --Arguments--
-  email_address : String : Mandatory string specifying the email address to use when creating the identity.
-  --Returns--
-  saved identity model object
+  Creates a new identity in the datstore and returns the identity object or if the email has already been used raises an AddressAlreadyUsed exception with the 
   """
-  return models.Identity(email=email_address,user=).put()
+  return models.Identity(key_name=email_address,email=email_address).put()
 
 def get_identity(email_address):
   """
-  --Description--
-  Get an identity from the store. If given a list return a list of matching identities.
-  Raise an identity does not exists exception if an email address is passed that does not exist.
+  Given an email address try to return a datastore object for it using the email_address as a key_name
   """
-  pass
+  return models.Identity.get_by_key_name(email_address)
   
 def identity_query(*args,**kwargs):
   """
-  Equivalent to Identity.all(*args,**kwargs)
+  Equivalent to Identity.all(*args,**kwargs). Used here to shield Identity from having to be directly imported outside the module.
   """
   return models.Identity.all(*args,**kwargs)
   

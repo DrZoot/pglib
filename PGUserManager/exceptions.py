@@ -16,7 +16,7 @@ class IdentityDoesNotExist(Exception):
     self.value = value
   
   def __str__(self):
-    return repr(self.value)
+    return "Identity email addresses must be unique:" + repr(self.value)
 
 class AddressAlreadyUsed(Exception):
   """
@@ -27,4 +27,4 @@ class AddressAlreadyUsed(Exception):
     self.value = value
 
   def __str__(self):
-    return repr(self.value)
+    return "Identity email addresses must be unique:" + repr(self.value)
