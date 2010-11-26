@@ -40,28 +40,20 @@ class Identity (db.Expando):
     --Description--
     Return a list of permissions which this identity has through its group memberships.
     """
-    group_bindings = db.get(self.group_bindings)
-    prefetch_refprops(group_bindings, MembershipBinding.group)
-    groups = [group_binding.group for group_binding in group_bindings]
-    permissions = []
-    
-    permissions = []
-    for membership in self.group_bindings:
-      bound_group = membership.group
-      for permission_binding in bound_group.permission_bindings:
-        permissions.append(permission_binding.permission)
-    return list(set(permissions))
+    group_keys = [membership_binding.group_key() for membership_binding in MembershipBinding.all().filter('identity',self)]
+    permissions = list(set(db.get([permission_binding.permission_key() for permission_binding in PermissionBinding.all().filter('subject IN',group_keys)])))
+    return permissions
     
   def get_all_permissions(self):
     """
     Return a list of permissions this user has both through group and user permissions.
     """
     permissions = self.get_group_permissions()
-    for permission_binding in self.permission_bindings:
-      permissions.append(permission_binding.permission)
+    direct_permission_keys = [permission_binding.permission_key() for permission_binding in self.permission_bindings]
+    permissions = permissions + db.get(direct_permission_keys)
     return list(set(permissions))
     
-  def has_permission(self,perm,ident_perm_list=None):
+  def has_permission(self,permission):
     """
     Return true if the user has the specified permission. 
     Can be specified as a permission name (string) or the key of a permission (key). 
@@ -69,34 +61,28 @@ class Identity (db.Expando):
     If the user is inactive this always returns false
     ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
     """
-    if isinstance(perm,basestring):
-      perm = Permission.all.filter('name',perm).get()
-    if not perm:
-      raise Exception('Permission does not exist')
-    if not isinstance(perm,db.Model):
-      raise Exception('Method requires valid name or permission object ')
-    if not ident_perm_list:
-      ident_perm_list = self.get_all_permissions()
-    if perm in ident_perm_list:
+    if not isinstance(permission,Permission) or not isinstance(permission,db.Key):
+      raise Exception('Must pass model or key')
+    if isinstance(permission,db.Key):
+      permission = Permission.get(permission)
+    current_permissions = self.get_all_permissions()
+    if permission in current_permissions:
       return True
     else:
       return False
     
-  def has_permissions(self,perm_list):
+  def has_permissions(self,permission_list):
     """
     Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_permission.
     """
-    ident_perm_list = self.get_all_permissions()
-    for perm in perm_list:
-      if not self.has_permission(perm,ident_perm_list=ident_perm_list):
-        return False
-    return True
-    
-  def _direct_permission_keys(self):
-    """Return a list of permissions which directly bind to this identity"""
-    permission_binding_query = PermissionBinding.all(keys_only=True).filter('subject',self)
-    permission_binding_keys = [permission_binding_key for permission_binding_key in permission_binding_query]
-    
+    for i,permission in zip(range(len(permission_list)),permission_list):
+      if not isinstance(permission,Permission) or not isinstance(permission,db.Key):
+        raise Exception('Must pass model or key')
+      if isinstance(permission,db.Key):
+        permission_list[i] = Permission.get(permission)
+    permission_set = set(permission_list)
+    current_permissions = set(self.get_all_permissions())
+    return permission_set.issubset(current_permissions)
     
 
 class Group (db.Model):
