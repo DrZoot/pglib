@@ -30,9 +30,9 @@ class Identity (db.Expando):
     Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete.
     """
     # Delete Permission Bindings
-    db.delete(self.permission_bindings)
+    db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
     # Delete Group Bindings
-    db.delete(self.group_bindings)
+    db.delete([key for key in MembershipBinding.all(keys_only=True).filter('identity',self)])
     super(Identity, self).delete()
     
   def get_group_permissions(self):
@@ -91,6 +91,13 @@ class Identity (db.Expando):
       if not self.has_permission(perm,ident_perm_list=ident_perm_list):
         return False
     return True
+    
+  def _direct_permission_keys(self):
+    """Return a list of permissions which directly bind to this identity"""
+    permission_binding_query = PermissionBinding.all(keys_only=True).filter('subject',self)
+    permission_binding_keys = [permission_binding_key for permission_binding_key in permission_binding_query]
+    
+    
 
 class Group (db.Model):
   """
@@ -109,18 +116,18 @@ class Group (db.Model):
     Override the model delete method to remove any memebers of this group before it is deleted.
     """
     # Delete Permission Bindings
-    db.delete(self.permission_bindings)
+    db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
     # Delete Membership Bindings
-    db.delete(self.identity_bindings)
+    db.delete([key for key in MembershipBinding.all(keys_only=True).filter('group',self)])
     super(Group, self).delete()
     
   def get_all_permissions(self):
     """
     Return a list of permissions this user has both through group and user permissions.
     """
-    permissions = []
-    for permission_binding in self.permission_bindings:
-      permissions.append(permission_binding.permission)
+    all_permission_binding_objects = [permission_binding for permission_binding in self.permission_bindings]
+    all_permission_keys = [permission_binding.permission_key() for permission_binding in all_permission_binding_objects]
+    permissions = db.get(all_permission_keys)
     return list(set(permissions))
 
   def has_permission(self,perm,ident_perm_list=None):
@@ -155,13 +162,10 @@ class Group (db.Model):
     return True
     
   def get_all_members(self):
+    """Return a list of identities attached to this group.
     """
-    Return a list of identities attached to this group.
-    """
-    members = []
-    for identity_binding in self.identity_bindings:
-      members.append(identity_binding.identity)
-    return members
+    identities = db.get([membership_binding.identity_key() for membership_binding in self.identity_bindings])
+    return list(set(identities))
     
   def has_member(self,ident):
     """Return true if the given identity is part of this group"""
@@ -171,13 +175,10 @@ class Group (db.Model):
     else:
       return False
     
-  def has_members(self,idents):
+  def has_members(self,identities):
     """Return true if all of the given identities are part of this group"""
-    ident
-    # is there anyway to do this without making one request per incoming identity?
-    # i did the same thing with permissions but didnt think that there would ever be
-    # large numbers of permissions, its almost a gurantee that there will be large numbers
-    # of users. what about if I retrieve a list of the groups identities
+    current_identity_keys = [membership_binding.identity_key() for membership_binding in self.identity_bindings]
+    current_identities = db.get(identity_keys)
     
   
 class Permission (db.Model):
@@ -192,12 +193,9 @@ class Permission (db.Model):
   description = db.TextProperty(default="")
   
   def delete(self):
-    """
-    --Description--
-    Override model delete method to remove all permission bindings when a permission is deleted.
-    """
+    """Override model delete method to remove all permission bindings when a permission is deleted."""
     # Delete all permission bindings
-    db.delete(self.owner_bindings)
+    db.delete([key for key in PermissionBinding.all(keys_only=True).filter('permission',self)])
     super(Permission, self).delete()
     
   def associated_with(self,subject_key):
@@ -255,4 +253,4 @@ class MembershipBinding (db.Model):
     
   def group_key(self):
     """return the key for the referenced group"""
-    return self.get_key('group')
+    return self.get_key('group') 
