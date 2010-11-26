@@ -43,4 +43,3 @@ def identity_query(*args,**kwargs):
   Equivalent to Identity.all(*args,**kwargs). Used here to shield Identity from having to be directly imported outside the module.
   """
   return models.Identity.all(*args,**kwargs)
-  
