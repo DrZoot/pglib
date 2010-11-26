@@ -8,6 +8,7 @@ Copyright 2010 Monotone Software. All rights reserved.
 Models for PGUserManager
 """
 from google.appengine.ext import db
+from utils import prefetch_refprops
 import exceptions
 
 class Identity (db.Expando):
@@ -39,6 +40,11 @@ class Identity (db.Expando):
     --Description--
     Return a list of permissions which this identity has through its group memberships.
     """
+    group_bindings = db.get(self.group_bindings)
+    prefetch_refprops(group_bindings, MembershipBinding.group)
+    groups = [group_binding.group for group_binding in group_bindings]
+    permissions = []
+    
     permissions = []
     for membership in self.group_bindings:
       bound_group = membership.group
@@ -215,6 +221,18 @@ class PermissionBinding (db.Model):
   """
   permission = db.ReferenceProperty(reference_class=Permission,required=True,collection_name='owner_bindings')
   subject = db.ReferenceProperty(required=True,collection_name='permission_bindings')
+  
+  def get_key(self,prop_name):
+    """return the key for a reference property without performing a datastore lookup"""
+    return getattr(self.__class__, prop_name).get_value_for_datastore(self)
+    
+  def permission_key(self):
+    """shortcut method to get the key of the referenced permission"""
+    return self.get_key('permission')
+    
+  def subject_key(self):
+    """shortcut method to get the key of the referenced subject"""
+    return self.get_key('subject')
 
 class MembershipBinding (db.Model):
   """
@@ -226,3 +244,15 @@ class MembershipBinding (db.Model):
   """
   identity = db.ReferenceProperty(required=True,reference_class=Identity,collection_name='group_bindings')
   group = db.ReferenceProperty(required=True,reference_class=Group,collection_name='identity_bindings')
+  
+  def get_key(self,prop_name):
+    """return the key for a reference property without performing a datastore lookup"""
+    return getattr(self.__class__, prop_name).get_value_for_datastore(self)
+    
+  def identity_key(self):
+    """return the key for the referenced identity"""
+    return self.get_key('identity')
+    
+  def group_key(self):
+    """return the key for the referenced group"""
+    return self.get_key('group')
