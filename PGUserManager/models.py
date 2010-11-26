@@ -40,6 +40,7 @@ class Identity (db.Expando):
     --Description--
     Return a list of permissions which this identity has through its group memberships.
     """
+    # TODO: compare this with using the Group.get_all_permissions method on each group and list(set([])) the result
     group_keys = [membership_binding.group_key() for membership_binding in MembershipBinding.all().filter('identity',self)]
     permissions = list(set(db.get([permission_binding.permission_key() for permission_binding in PermissionBinding.all().filter('subject IN',group_keys)])))
     return permissions
@@ -111,12 +112,9 @@ class Group (db.Model):
     """
     Return a list of permissions this user has both through group and user permissions.
     """
-    all_permission_binding_objects = [permission_binding for permission_binding in self.permission_bindings]
-    all_permission_keys = [permission_binding.permission_key() for permission_binding in all_permission_binding_objects]
-    permissions = db.get(all_permission_keys)
-    return list(set(permissions))
+    return db.get([permission_binding.permission_key() for permission_binding in self.permission_bindings])
 
-  def has_permission(self,perm,ident_perm_list=None):
+  def has_permission(self,permission):
     """
     Return true if the user has the specified permission. 
     Can be specified as a permission name (string) or the key of a permission (key). 
@@ -124,47 +122,44 @@ class Group (db.Model):
     If the user is inactive this always returns false
     ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
     """
-    if isinstance(perm,basestring):
-      perm = Permission.all.filter('name',perm).get()
-    if not perm:
-      raise Exception('Permission does not exist')
-    if not isinstance(perm,db.Model):
-      raise Exception('Method requires valid name or permission object ')
-    if not ident_perm_list:
-      ident_perm_list = self.get_all_permissions()
-    if perm in ident_perm_list:
+    if PermissionBinding.all(keys_only=True).filter('subject',self).filter('permission',permission).get():
       return True
     else:
       return False
 
-  def has_permissions(self,perm_list):
+  def has_permissions(self,permission_list):
     """
     Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_perm.
     """
-    ident_perm_list = self.get_all_permissions()
-    for perm in perm_list:
-      if not self.has_permission(perm,ident_perm_list=ident_perm_list):
-        return False
-    return True
+    for i,permission in zip(range(len(permission_list)),permission_list):
+      if not isinstance(permission,Permission) or not isinstance(permission,db.Key):
+        raise Exception('Must pass model or key')
+      if isinstance(permission,db.Key):
+        permission_list[i] = Permission.get(permission)
+    current_permissions = set(self.get_all_permissions())
+    return set(permission_list).issubset(current_permissions)
     
   def get_all_members(self):
     """Return a list of identities attached to this group.
     """
-    identities = db.get([membership_binding.identity_key() for membership_binding in self.identity_bindings])
-    return list(set(identities))
+    return db.get([membership_binding.identity_key() for membership_binding in self.identity_bindings])
     
-  def has_member(self,ident):
+  def has_member(self,identity):
     """Return true if the given identity is part of this group"""
-    query = self.identity_bindings.filter('identity',ident)
-    if query.get():
+    if MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).get():
       return True
     else:
       return False
     
-  def has_members(self,identities):
+  def has_members(self,identity_list):
     """Return true if all of the given identities are part of this group"""
-    current_identity_keys = [membership_binding.identity_key() for membership_binding in self.identity_bindings]
-    current_identities = db.get(identity_keys)
+    for i,identity in zip(range(len(identity_list)),identity_list):
+      if not isinstance(identity,Identity) or not isinstance(identity,db.Key):
+        raise Exception('Must pass model or key')
+      if isinstance(identity,db.Key):
+        identity_list[i] = Identity.get(identity)
+    current_members = set(self.get_all_members)
+    return set(identity_list).issubset(current_members)
     
   
 class Permission (db.Model):
