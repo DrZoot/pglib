@@ -28,3 +28,11 @@ class AddressAlreadyUsed(Exception):
 
   def __str__(self):
     return "Identity email addresses must be unique:" + repr(self.value)
+    
+class NameAlreadyUsed(Exception):
+  """Raised when an attempt is made to create a group with a name that is already used"""
+  def __init__(self, value):
+    self.value = value
+    
+  def __str__(self):
+    return "Group name is already in use:" + repr(self.value)
