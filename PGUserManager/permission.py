@@ -42,5 +42,26 @@ def bind_permission(permission,subject):
   else:
     key = models.PermissionBinding(key_name=permission_binding_name,permission=permission,subject=subject).put()
     return models.PermissionBinding.get(key)
+    
+def unbind_permission(permission,subject):
+  """remove permission bindings for the given permission and subject"""
+  if not isinstance(permission,models.Permission):
+    raise Exception("Must pass permission object, not key.")
+  else:
+    permission_name = permission.name
+  if not isinstance(subject,models.Identity) or not isinstance(subject,models.Group):
+    raise Exception("Must pass either an Identity object or a Group object, not keys.")
+  else:
+    subject_name = subject.key().name
+  permission_binding_name = permission_name + "_" + subject_name
+  binding = models.PermissionBinding.get_by_key_name(permission_binding_name)
+  if binding:
+    binding.delete()
+    # if we found a binding and deleted it return true
+    return True
+  else:
+    # if we did not find a binding return None, no exception because the bindigns are in the state expected
+    return None
+    
       
   
