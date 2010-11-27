@@ -189,21 +189,18 @@ class Permission (db.Model):
       return True
     else:
       return False
-
-class PermissionBinding (db.Model):
-  """
-  --Description--
-  Represents relationships between permissions and groups / users.
-  --Properties--
-  Permission : ReferenceProperty(Permission) : A reference to the permission being bound.
-  Subject : ReferenceProperty : A reference to the item being bound to the permission. Must be either a group or an identity.
-  """
-  permission = db.ReferenceProperty(reference_class=Permission,required=True,collection_name='owner_bindings')
-  subject = db.ReferenceProperty(required=True,collection_name='permission_bindings')
+      
+class BindingModel(db.Model):
+  """Base class to represent bindings between objects"""
   
   def get_key(self,prop_name):
     """return the key for a reference property without performing a datastore lookup"""
     return getattr(self.__class__, prop_name).get_value_for_datastore(self)
+
+class PermissionBinding (BindingModel):
+  """Represents relationships between permissions and groups / users."""
+  permission = db.ReferenceProperty(reference_class=Permission,required=True,collection_name='owner_bindings')
+  subject = db.ReferenceProperty(required=True,collection_name='permission_bindings')
     
   def permission_key(self):
     """shortcut method to get the key of the referenced permission"""
@@ -213,20 +210,10 @@ class PermissionBinding (db.Model):
     """shortcut method to get the key of the referenced subject"""
     return self.get_key('subject')
 
-class MembershipBinding (db.Model):
-  """
-  --Description--
-  Object for storing user group membership.
-  --Properties--
-  Identity : ReferenceProperty : The user identity to be bound.
-  Group : ReferenceProperty : The group to be bound.
-  """
+class MembershipBinding (BindingModel):
+  """Object for storing user group membership."""
   identity = db.ReferenceProperty(required=True,reference_class=Identity,collection_name='group_bindings')
   group = db.ReferenceProperty(required=True,reference_class=Group,collection_name='identity_bindings')
-  
-  def get_key(self,prop_name):
-    """return the key for a reference property without performing a datastore lookup"""
-    return getattr(self.__class__, prop_name).get_value_for_datastore(self)
     
   def identity_key(self):
     """return the key for the referenced identity"""
