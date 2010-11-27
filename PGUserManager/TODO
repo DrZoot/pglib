@@ -1,0 +1,15 @@
+This is the todo list for PGUserManager.
+If you are interested in working on any of these, email p.gower@gmail.com
+
+  (c) Copyright 2010 Paul Gower. All Rights Reserved. 
+
+  Copying and distribution of this file, with or without modification,
+  are permitted in any medium without royalty provided the copyright
+  notice and this notice are preserved.
+
+* General:
+  - Integrate Identity active checking in all queries
+    . Identities must be considered hidden when active is false
+  - Optimise uniqueness lookups in create functions to use get_by_key_name
+  - If using key_names based on known values can get_x functions be modified to use get_by_key_name
+    . get_by_key_name appears to be 2.6 less CPU intensive then equivalent fetch queries

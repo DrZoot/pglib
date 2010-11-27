@@ -18,7 +18,6 @@ def create_group(name,description=None):
     key = models.Group(key_name=name,name=name,description=description).put()
     return models.Group.get(key)
   
-  
 def get_group(name):
   """return the group with the given name or none"""
   return models.Group.all().filter('name',name).get()

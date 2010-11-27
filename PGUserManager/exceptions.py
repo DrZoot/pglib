@@ -36,3 +36,12 @@ class NameAlreadyUsed(Exception):
     
   def __str__(self):
     return "Group name is already in use:" + repr(self.value)
+    
+class InvalidValue(Exception):
+  """Used to indicate an invalid value has been passed to a function"""
+  def __init__(self, value):
+    self.value = value
+    
+  def __str__(self):
+    return "Ivalid value passed. Require " + repr(self.value)
+    
