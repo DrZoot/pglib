@@ -11,11 +11,11 @@ import exceptions
 
 def create_identity(email_address):
   """
-  Creates a new identity in the datstore and returns the identity object or if the email has already been used raises an AddressAlreadyUsed exception with the 
+  Creates a new identity in the datstore and returns the identity object or if the email has already been used raises an DuplicateValue exception with the 
   """
   uniqueness_query = models.Identity.all(keys_only=True).filter('email',email_address)
   if uniqueness_query.get():
-    raise exceptions.AddressAlreadyUsed(email_address)
+    raise exceptions.DuplicateValue(email_address)
   else:
     key = models.Identity(key_name=email_address,email=email_address).put()
     return models.Identity.get(key)
