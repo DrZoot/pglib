@@ -7,41 +7,14 @@ Copyright (c) 2010 Monotone Software. All rights reserved.
 Exceptions for the PGUserManager module.
 """
 
-class IdentityDoesNotExist(Exception):
-  """
-  --Description--
-  Raised when an action is attempted on an identity that does not exist.
-  """
-  def __init__(self,value):
-    self.value = value
+class RecordDoesNotExist(Exception):
+  """Raised when an attempt is made to access a record that does not exist"""
+  pass
   
-  def __str__(self):
-    return "Identity email addresses must be unique:" + repr(self.value)
-
-class AddressAlreadyUsed(Exception):
-  """
-  --Description--
-  Raised when an attempt is made to create an identity with an email address that is already is use.
-  """
-  def __init__(self,value):
-    self.value = value
-
-  def __str__(self):
-    return "Identity email addresses must be unique:" + repr(self.value)
+class DuplicateValue(Exception):
+  """Raised when trying to create a new value with a non-unique key (identity/permission/group)"""
+  pass
     
-class NameAlreadyUsed(Exception):
-  """Raised when an attempt is made to create a group with a name that is already used"""
-  def __init__(self, value):
-    self.value = value
-    
-  def __str__(self):
-    return "Group name is already in use:" + repr(self.value)
-    
-class InvalidValue(Exception):
-  """Used to indicate an invalid value has been passed to a function"""
-  def __init__(self, value):
-    self.value = value
-    
-  def __str__(self):
-    return "Ivalid value passed. Require " + repr(self.value)
-    
+class BindingExists(Exception):
+  """Raised when trying to create a binding that already exists"""
+  pass
