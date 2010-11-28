@@ -6,6 +6,7 @@ Copyright (c) 2010 Monotone Software. All rights reserved.
 
 Miscellaneous functions to help with various actions.
 """
+from google.appengine.ext import db
 
 def prefetch_refprops(entities, *props):
   """
@@ -18,3 +19,13 @@ def prefetch_refprops(entities, *props):
   for (entity, prop), ref_key in zip(fields, ref_keys):
     prop.__set__(entity, ref_entities[ref_key])
   return entities
+  
+def verify_arg(arg,*args,convert_keys=True):
+  """given an input argument and a list of models make sure that the input is one of the model types"""
+  if isinstance(arg,db.Key):
+    arg = db.get(arg)
+  if isinstance(arg,tuple(*args)):
+    return arg
+  else:
+    raise TypeError('arg must be one of:' + repr(*args))
+  
