@@ -33,7 +33,7 @@ def add_member(group,identity):
   identity = utils.verify_arg(identity,models.Identity)
   membership_binding_name = identity.email + "_" + group.name
   if models.MembershipBinding.get_by_key_name(membership_binding_name):
-    raise exception.BindingExists('MembershipBinding already exists')
+    raise exceptions.BindingExists('MembershipBinding already exists')
   else:
     key = models.MembershipBinding(key_name=membership_binding_name,group=group,identity=identity).put()
     return models.MembershipBinding.get(key)
