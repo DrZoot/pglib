@@ -72,5 +72,5 @@ class IdentityTestsOne(unittest.TestCase):
     # delete an identity
     i = identity.create_identity('user1@example.org')
     i.delete()
-    self.assert_(identity.get_identity('user1@example.org') == None, 'Deleted object should not exist in the datastore')
+    self.assert_(identity.get_identity('user1@example.org') == None, 'Deleted identity should not exist in the datastore')
     
