@@ -8,6 +8,7 @@ Functions for manipulating Permissions
 """
 import models
 import exceptions
+import utils
 
 def create_permission(name,description=None):
   """Create a new permission or raise a NameAlreadyUsed exception if a permission already exists with that name"""
@@ -28,15 +29,9 @@ def permission_query(*args,**kwargs):
   
 def bind_permission(permission,subject):
   """Create a permission binding between the given permission and the subject (group/identity)"""
-  if not isinstance(permission,models.Permission):
-    raise Exception("Must pass permission object, not key.")
-  else:
-    permission_name = permission.name
-  if not isinstance(subject,models.Identity) or not isinstance(subject,models.Group):
-    raise Exception("Must pass either an Identity object or a Group object, not keys.")
-  else:
-    subject_name = subject.key().name
-  permission_binding_name = permission_name + "_" + subject_name
+  permission = utils.verify_arg(permission,models.Permission)
+  subject = utils.verify_arg(subject,models.Identity,models.Group)
+  permission_binding_name = permission.name + "_" + subject.key().name
   if models.PermissionBinding.get_by_key_name(permission_binding_name):
     raise Exception("PermissionBinding already exists")
   else:
@@ -45,23 +40,26 @@ def bind_permission(permission,subject):
     
 def unbind_permission(permission,subject):
   """remove permission bindings for the given permission and subject"""
-  if not isinstance(permission,models.Permission):
-    raise Exception("Must pass permission object, not key.")
-  else:
-    permission_name = permission.name
-  if not isinstance(subject,models.Identity) or not isinstance(subject,models.Group):
-    raise Exception("Must pass either an Identity object or a Group object, not keys.")
-  else:
-    subject_name = subject.key().name
-  permission_binding_name = permission_name + "_" + subject_name
+  permission = utils.verify_arg(permission,models.Permission)
+  subject = utils.verify_arg(subject,models.Identity,models.Group)
+  permission_binding_name = permission.name + "_" + subject.key().name
   binding = models.PermissionBinding.get_by_key_name(permission_binding_name)
   if binding:
     binding.delete()
     # if we found a binding and deleted it return true
     return True
   else:
-    # if we did not find a binding return None, no exception because the bindigns are in the state expected
+    # if we did not find a binding return None, no exception because the bindings are in the state expected
     return None
+    
+def unbind_permission_from_subjects(permission,subjects):
+  """remove 1 permission from multiple subjects"""
+  pass
+  
+def unbind_permissions_from_subject(permissions,subject):
+  """remove many permissions from 1 subject"""
+  pass
+
     
       
   
