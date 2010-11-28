@@ -8,7 +8,7 @@ Copyright 2010 Monotone Software. All rights reserved.
 Models for PGUserManager
 """
 from google.appengine.ext import db
-from utils import prefetch_refprops
+import utils
 import exceptions
 
 class Identity (db.Expando):
@@ -62,10 +62,7 @@ class Identity (db.Expando):
     If the user is inactive this always returns false
     ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
     """
-    if not isinstance(permission,Permission) or not isinstance(permission,db.Key):
-      raise Exception('Must pass model or key')
-    if isinstance(permission,db.Key):
-      permission = Permission.get(permission)
+    permission = utils.verify_arg(permission,Permission)
     current_permissions = self.get_all_permissions()
     if permission in current_permissions:
       return True
@@ -77,10 +74,7 @@ class Identity (db.Expando):
     Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_permission.
     """
     for i,permission in zip(range(len(permission_list)),permission_list):
-      if not isinstance(permission,Permission) or not isinstance(permission,db.Key):
-        raise Exception('Must pass model or key')
-      if isinstance(permission,db.Key):
-        permission_list[i] = Permission.get(permission)
+      permission_list[i] = utils.verify_arg(permission,Permission)
     permission_set = set(permission_list)
     current_permissions = set(self.get_all_permissions())
     return permission_set.issubset(current_permissions)
@@ -132,10 +126,7 @@ class Group (db.Model):
     Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_perm.
     """
     for i,permission in zip(range(len(permission_list)),permission_list):
-      if not isinstance(permission,Permission) or not isinstance(permission,db.Key):
-        raise Exception('Must pass model or key')
-      if isinstance(permission,db.Key):
-        permission_list[i] = Permission.get(permission)
+      permission_list[i] = utils.verify_arg(permission,Permission)
     current_permissions = set(self.get_all_permissions())
     return set(permission_list).issubset(current_permissions)
     
@@ -154,10 +145,7 @@ class Group (db.Model):
   def has_members(self,identity_list):
     """Return true if all of the given identities are part of this group"""
     for i,identity in zip(range(len(identity_list)),identity_list):
-      if not isinstance(identity,Identity) or not isinstance(identity,db.Key):
-        raise Exception('Must pass model or key')
-      if isinstance(identity,db.Key):
-        identity_list[i] = Identity.get(identity)
+      identity_list[i] = utils.verify_arg(identity,Identity)
     current_members = set(self.get_all_members)
     return set(identity_list).issubset(current_members)
     
@@ -180,10 +168,7 @@ class Permission (db.Model):
     super(Permission, self).delete()
     
   def associated_with(self,subject_key):
-    if isinstance(subject_key,db.Key):
-      subject = Identity.get(subject_key) or Group.get(subject_key)
-    else:
-      raise Exception('Must pass a key of type db.Key')
+    subject = utils.verify_arg(subject_key,Identity,Group)
     query = self.owner_bindings.filter('subject',subject)
     if query.get():
       return True
