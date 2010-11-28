@@ -1,10 +1,29 @@
 import unittest
 from PGUserManager import identity
+from PGUserManager import group
+from PGUserManager import permission
 from PGUserManager import exceptions
 from PGUserManager import models
 from google.appengine.ext import db
 
 class IdentityTestsOne(unittest.TestCase):
+  
+  # def setUp(self):
+  #   for i in range(4):
+  #     group.create_group('Group'+str(i))
+  #   for i in range(10):
+  #     permission.create_permission('Permission'+str(i))
+  #   permission.bind_permission(permission.get_permission('Permission1'),group.get_group('Group1'))
+  #   permission.bind_permission(permission.get_permission('Permission2'),group.get_group('Group2'))
+  #   permission.bind_permission(permission.get_permission('Permission3'),group.get_group('Group2'))
+  #   permission.bind_permission(permission.get_permission('Permission4'),group.get_group('Group3'))
+  #   permission.bind_permission(permission.get_permission('Permission5'),group.get_group('Group3'))
+  #   permission.bind_permission(permission.get_permission('Permission6'),group.get_group('Group3'))
+  #   permission.bind_permission(permission.get_permission('Permission7'),group.get_group('Group4'))
+  #   permission.bind_permission(permission.get_permission('Permission8'),group.get_group('Group4'))
+  #   permission.bind_permission(permission.get_permission('Permission9'),group.get_group('Group4'))
+  #   permission.bind_permission(permission.get_permission('Permission10'),group.get_group('Group4'))
+  #   
 
   def testCreateIdentity(self):
     # creating an identity should return an identity object with the given email
