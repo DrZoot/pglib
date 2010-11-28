@@ -20,7 +20,7 @@ def prefetch_refprops(entities, *props):
     prop.__set__(entity, ref_entities[ref_key])
   return entities
   
-def verify_arg(arg,*args,convert_keys=True):
+def verify_arg(arg,*args):
   """given an input argument and a list of models make sure that the input is one of the model types"""
   if isinstance(arg,db.Key):
     arg = db.get(arg)
