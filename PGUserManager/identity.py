@@ -8,6 +8,7 @@ Functions for manipulating identities
 """
 import models
 import exceptions
+from google.appengine.api import users
 
 def create_identity(email_address):
   """
@@ -31,3 +32,7 @@ def identity_query(*args,**kwargs):
   Equivalent to Identity.all(*args,**kwargs). Used here to shield Identity from having to be directly imported outside the module.
   """
   return models.Identity.all(*args,**kwargs)
+  
+def identity_for_current_user():
+  """Return the identity for the currently logged on user or None"""
+  pass
