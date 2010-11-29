@@ -5,7 +5,7 @@ from PGUserManager import exceptions
 from PGUserManager import models
 from google.appengine.ext import db
 
-class GroupTestsOne(unittest.TestCase):
+class FunctionTesting(unittest.TestCase):
   
   def setUp(self):
     for i in range(10):

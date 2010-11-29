@@ -5,26 +5,10 @@ from PGUserManager import permission
 from PGUserManager import exceptions
 from PGUserManager import models
 from google.appengine.ext import db
+import logging
 
-class IdentityTestsOne(unittest.TestCase):
+class FunctionTesting(unittest.TestCase):
   
-  # def setUp(self):
-  #   for i in range(4):
-  #     group.create_group('Group'+str(i))
-  #   for i in range(10):
-  #     permission.create_permission('Permission'+str(i))
-  #   permission.bind_permission(permission.get_permission('Permission1'),group.get_group('Group1'))
-  #   permission.bind_permission(permission.get_permission('Permission2'),group.get_group('Group2'))
-  #   permission.bind_permission(permission.get_permission('Permission3'),group.get_group('Group2'))
-  #   permission.bind_permission(permission.get_permission('Permission4'),group.get_group('Group3'))
-  #   permission.bind_permission(permission.get_permission('Permission5'),group.get_group('Group3'))
-  #   permission.bind_permission(permission.get_permission('Permission6'),group.get_group('Group3'))
-  #   permission.bind_permission(permission.get_permission('Permission7'),group.get_group('Group4'))
-  #   permission.bind_permission(permission.get_permission('Permission8'),group.get_group('Group4'))
-  #   permission.bind_permission(permission.get_permission('Permission9'),group.get_group('Group4'))
-  #   permission.bind_permission(permission.get_permission('Permission10'),group.get_group('Group4'))
-  #   
-
   def testCreateIdentity(self):
     # creating an identity should return an identity object with the given email
     i = identity.create_identity('user1@example.org')
@@ -92,4 +76,32 @@ class IdentityTestsOne(unittest.TestCase):
     i = identity.create_identity('user1@example.org')
     i.delete()
     self.assert_(identity.get_identity('user1@example.org') == None, 'Deleted identity should not exist in the datastore')
+    
+class InstanceMethodTesting(unittest.TestCase):
+  
+  def setUp(self):
+    for g in range(10):
+      group.create_group('Group'+str(g))
+    for p in range(10):
+      permission.create_permission('Permission'+str(p))
+    
+  def testGetGroupPermissions(self):
+    # using the instance methods retrieve the group permissions for this id
+    i = identity.create_identity('user1@example.org')
+    g = group.group_query().get()
+    p_one = [p for p in permission.permission_query().order('name').fetch(5)]
+    p_two = [p for p in permission.permission_query().order('name').fetch(5,offset=5)]
+    group.add_member(g,i)
+    for p in p_one:
+      permission.bind_permission(p,i)
+    for p in p_two:
+      permission.bind_permission(p,g)
+    logging.info(str([po.key().name() for po in i.get_group_permissions()]))
+    logging.info(str([po.key().name() for po in p_two]))
+    logging.info(str(p_two[0] == i.get_group_permissions()[0]))
+    self.assert_(set(p_two) == (set(i.get_group_permissions())), 'message')
+    self.assertEqual(5, len(i.get_group_permissions()), 'Number of returned permissions must equal number of bound permissions')
+    
+      
+    
     

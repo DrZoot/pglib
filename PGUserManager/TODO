@@ -13,6 +13,6 @@ If you are interested in working on any of these, email p.gower@gmail.com
   - Optimise uniqueness lookups in create functions to use get_by_key_name
   - If using key_names based on known values can get_x functions be modified to use get_by_key_name
     . get_by_key_name appears to be 2.6 less CPU intensive then equivalent fetch queries
-  - Clean up the Exceptions, they're a bit scattershot
   - Figure out how to do read only properties, there are whole bunches of stuff that i dont want people to be able to change ever
-  - Add tests for Identity / Group instance methods
+  - Normalise all incoming email address to lowercase, fairly sure key_names are case sensitive and that would be a pain
+  - When inferring key_names for bindings use object.key().name() not the properties of the object

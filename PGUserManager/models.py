@@ -79,6 +79,26 @@ class Identity (db.Expando):
     current_permissions = set(self.get_all_permissions())
     return permission_set.issubset(current_permissions)
     
+  def __hash__(self):
+    """Return a hash for this model instance"""
+    static_prop_values = frozenset([getattr(self,pv) for pv in ['email','active']])
+    dynamic_prop_values = frozenset([getattr(self,pv) for pv in self.dynamic_properties()])
+    key = str(self.key())
+    return hash((static_prop_values,dynamic_prop_values,key))
+    
+  def __eq__(self,other):
+    """equality for models"""
+    if hash(self) == hash(other):
+      return True
+    else:
+      return False
+      
+  def __ne__(self,other):
+    """inequality for models"""
+    if hash(self) != hash(other):
+      return True
+    else:
+      return False
 
 class Group (db.Model):
   """
@@ -149,6 +169,26 @@ class Group (db.Model):
     current_members = set(self.get_all_members)
     return set(identity_list).issubset(current_members)
     
+  def __hash__(self):
+    """Return a hash for this model instance"""
+    static_prop_values = frozenset([getattr(self,pv) for pv in ['name','description']])
+    key = str(self.key())
+    return hash((static_prop_values,key))
+    
+  def __eq__(self,other):
+    """equality for models"""
+    if hash(self) == hash(other):
+      return True
+    else:
+      return False
+
+  def __ne__(self,other):
+    """inequality for models"""
+    if hash(self) != hash(other):
+      return True
+    else:
+      return False
+          
   
 class Permission (db.Model):
   """
@@ -175,12 +215,46 @@ class Permission (db.Model):
     else:
       return False
       
+  def __hash__(self):
+    """Return a hash for this model instance"""
+    static_prop_values = frozenset([getattr(self,pv) for pv in ['name','description']])
+    key = str(self.key())
+    return hash((static_prop_values,key))
+    
+  def __eq__(self,other):
+    """equality for models"""
+    if hash(self) == hash(other):
+      return True
+    else:
+      return False
+
+  def __ne__(self,other):
+    """inequality for models"""
+    if hash(self) != hash(other):
+      return True
+    else:
+      return False
+      
 class BindingModel(db.Model):
   """Base class to represent bindings between objects"""
   
   def get_key(self,prop_name):
     """return the key for a reference property without performing a datastore lookup"""
     return getattr(self.__class__, prop_name).get_value_for_datastore(self)
+    
+  def __eq__(self,other):
+    """equality for models"""
+    if hash(self) == hash(other):
+      return True
+    else:
+      return False
+
+  def __ne__(self,other):
+    """inequality for models"""
+    if hash(self) != hash(other):
+      return True
+    else:
+      return False
 
 class PermissionBinding (BindingModel):
   """Represents relationships between permissions and groups / users."""
@@ -194,6 +268,10 @@ class PermissionBinding (BindingModel):
   def subject_key(self):
     """shortcut method to get the key of the referenced subject"""
     return self.get_key('subject')
+    
+  def __hash__(self):
+    """Return a hash for this model instance"""
+    return hash((str(self.permission_key()),str(self.subject_key())))
 
 class MembershipBinding (BindingModel):
   """Object for storing user group membership."""
@@ -207,3 +285,7 @@ class MembershipBinding (BindingModel):
   def group_key(self):
     """return the key for the referenced group"""
     return self.get_key('group') 
+    
+  def __hash__(self):
+    """Return a hash for this model instance"""
+    return hash((str(self.identity_key()),str(self.group_key())))

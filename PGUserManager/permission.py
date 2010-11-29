@@ -31,7 +31,7 @@ def bind_permission(permission,subject):
   """Create a permission binding between the given permission and the subject (group/identity)"""
   permission = utils.verify_arg(permission,models.Permission)
   subject = utils.verify_arg(subject,models.Identity,models.Group)
-  permission_binding_name = permission.name + "_" + subject.key().name
+  permission_binding_name = permission.name + "_" + subject.key().name()
   if models.PermissionBinding.get_by_key_name(permission_binding_name):
     raise exceptions.BindingExists("PermissionBinding already exists")
   else:
@@ -42,7 +42,7 @@ def unbind_permission(permission,subject):
   """remove permission bindings for the given permission and subject"""
   permission = utils.verify_arg(permission,models.Permission)
   subject = utils.verify_arg(subject,models.Identity,models.Group)
-  permission_binding_name = permission.name + "_" + subject.key().name
+  permission_binding_name = permission.name + "_" + subject.key().name()
   binding = models.PermissionBinding.get_by_key_name(permission_binding_name)
   if binding:
     binding.delete()
