@@ -10,6 +10,7 @@ Models for PGUserManager
 from google.appengine.ext import db
 import utils
 import exceptions
+import logging
 
 class Identity (db.Expando):
   """
@@ -73,10 +74,12 @@ class Identity (db.Expando):
     """
     Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_permission.
     """
+    if permission_list == []:
+      return False
     for i,permission in zip(range(len(permission_list)),permission_list):
       permission_list[i] = utils.verify_arg(permission,Permission)
-    permission_set = set(permission_list)
-    current_permissions = set(self.get_all_permissions())
+    permission_set = frozenset(permission_list)
+    current_permissions = frozenset(self.get_all_permissions())
     return permission_set.issubset(current_permissions)
     
   def __hash__(self):
@@ -145,10 +148,12 @@ class Group (db.Model):
     """
     Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_perm.
     """
+    if permission_list == []:
+      return False
     for i,permission in zip(range(len(permission_list)),permission_list):
       permission_list[i] = utils.verify_arg(permission,Permission)
-    current_permissions = set(self.get_all_permissions())
-    return set(permission_list).issubset(current_permissions)
+    current_permissions = frozenset(self.get_all_permissions())
+    return frozenset(permission_list).issubset(current_permissions)
     
   def get_all_members(self):
     """Return a list of identities attached to this group.
@@ -164,10 +169,12 @@ class Group (db.Model):
     
   def has_members(self,identity_list):
     """Return true if all of the given identities are part of this group"""
+    if identity_list == []:
+      return False
     for i,identity in zip(range(len(identity_list)),identity_list):
       identity_list[i] = utils.verify_arg(identity,Identity)
-    current_members = set(self.get_all_members)
-    return set(identity_list).issubset(current_members)
+    current_members = frozenset(self.get_all_members)
+    return frozenset(identity_list).issubset(current_members)
     
   def __hash__(self):
     """Return a hash for this model instance"""
@@ -207,8 +214,8 @@ class Permission (db.Model):
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('permission',self)])
     super(Permission, self).delete()
     
-  def associated_with(self,subject_key):
-    subject = utils.verify_arg(subject_key,Identity,Group)
+  def associated_with(self,subject):
+    subject = utils.verify_arg(subject,Identity,Group)
     query = self.owner_bindings.filter('subject',subject)
     if query.get():
       return True
