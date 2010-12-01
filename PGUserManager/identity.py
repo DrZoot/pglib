@@ -35,4 +35,4 @@ def identity_query(*args,**kwargs):
   
 def identity_for_current_user():
   """Return the identity for the currently logged on user or None"""
-  pass
+  return identity.get_identity(users.get_current_user().email())

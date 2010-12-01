@@ -17,3 +17,4 @@ If you are interested in working on any of these, email p.gower@gmail.com
   - Normalise all incoming email address to lowercase, fairly sure key_names are case sensitive and that would be a pain
   - When inferring key_names for bindings use object.key().name() not the properties of the object
   - make all methods obey active status, except xx_query
+  - Modify tests for has_permissions and has_members to include test inputs with some valid and some invalid members
