@@ -84,9 +84,6 @@ class InstanceMethodTesting(unittest.TestCase):
       group.create_group('Group'+str(g))
     for p in range(10):
       permission.create_permission('Permission'+str(p))
-    
-  def testGetGroupPermissions(self):
-    # using the instance methods retrieve the group permissions for this id
     i = identity.create_identity('user1@example.org')
     g = group.group_query().get()
     p_one = [p for p in permission.permission_query().order('name').fetch(5)]
@@ -96,12 +93,78 @@ class InstanceMethodTesting(unittest.TestCase):
       permission.bind_permission(p,i)
     for p in p_two:
       permission.bind_permission(p,g)
-    logging.info(str([po.key().name() for po in i.get_group_permissions()]))
-    logging.info(str([po.key().name() for po in p_two]))
-    logging.info(str(p_two[0] == i.get_group_permissions()[0]))
-    self.assert_(set(p_two) == (set(i.get_group_permissions())), 'message')
-    self.assertEqual(5, len(i.get_group_permissions()), 'Number of returned permissions must equal number of bound permissions')
+      
+  def testGetGroupPermissions(self):
+    # using the instance methods retrieve the group permissions for this id
+    i = identity.get_identity('user1@example.org')
+    p_two = [p for p in permission.permission_query().order('name').fetch(5,offset=5)]
+    self.assert_(set(p_two) == set(i.get_group_permissions()), 'Bound permissions must equal returned permissions')
+    self.assertEqual(5, len(i.get_group_permissions()), 'Number of returned permissions must equal number of bound permissions (5)')
     
+  def testGetAllPermissions(self):
+    # using instance method return all permissions applicable to this identity
+    i = identity.get_identity('user1@example.org')
+    p_all = [p for p in permission.permission_query()]
+    self.assert_(set(p_all) == set(i.get_all_permissions()), 'Bound permissions must equal returned permissions')
+    self.assertEqual(10, len(i.get_all_permissions()), 'Number of returned permissions must equal number of bound permissions (10)')
+    
+  def testHasPermission(self):
+    # test that has_permission returns true for all permissions
+    i = identity.get_identity('user1@example.org')
+    for p in permission.permission_query():
+      self.assert_(i.has_permission(p), 'Identity must have all passed permissions')
+    p_invalid = []
+    for p in range(10):
+      p_invalid.append(permission.create_permission('InvalidPermission'+str(p)))
+    for p in p_invalid:
+      self.assert_(not i.has_permission(p), 'Identity must not have any permissions that are not bound to it')
+      
+class IdentityHasPermissions(unittest.TestCase):
+  
+  def setUp(self):
+    for g in range(10):
+      group.create_group('Group'+str(g))
+    for p in range(10):
+      permission.create_permission('Permission'+str(p))
+    i = identity.create_identity('user1@example.org')
+    g = group.group_query().get()
+    p_one = [p for p in permission.permission_query().order('name').fetch(5)]
+    p_two = [p for p in permission.permission_query().order('name').fetch(5,offset=5)]
+    group.add_member(g,i)
+    for p in p_one:
+      permission.bind_permission(p,i)
+    for p in p_two:
+      permission.bind_permission(p,g)
+  
+  def testHasPermissionsValidInput(self):
+    # identity.has_permissions should return true for any combination of valid permissions
+    i = identity.get_identity('user1@example.org')
+    p_all = []
+    for p in permission.permission_query():
+      p_all.append(p)
+    for j in range(1,10):
+      self.assert_(i.has_permissions(p_all[0:j]), 'Identity should return true to any combination of valid permissions')
+    
+  def testHasPermissionsInvalidInput(self):
+    # identity.has_permissions should return true for any combination of valid permissions
+    i = identity.get_identity('user1@example.org')
+    p_invalid = []
+    for p in range(10):
+      p_invalid.append(permission.create_permission('InvalidPermission'+str(p)))
+    for j in range(1,10):
+      self.assert_(not i.has_permissions(p_invalid[0:j]), 'Identity should return false to any combination of invalid permissions')
+      
+  def testHasPermissionsEmptyInput(self):
+    # identity.has_permissions should return false for an empty input list 
+    i = identity.get_identity('user1@example.org')
+    self.assert_(not i.has_permissions([]), 'Identity should return false for has_permissions when given an empty list')
+    
+  def testInvalidArgumentTypes(self):
+    # ensure that when given non-permission objects a typeerror exception is raised
+    i = identity.get_identity('user1@example.org')
+    def invalid_args(self):
+      i.has_permissions([1,'a'])
+    self.assertRaises(TypeError, invalid_args)
       
     
     
