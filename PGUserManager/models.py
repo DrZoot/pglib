@@ -182,7 +182,7 @@ class Group (db.Model):
       return False
     for i,identity in zip(range(len(identity_list)),identity_list):
       identity_list[i] = utils.verify_arg(identity,Identity)
-    current_members = frozenset(self.get_all_members)
+    current_members = frozenset(self.get_all_members())
     return frozenset(identity_list).issubset(current_members)
     
   def __hash__(self):
