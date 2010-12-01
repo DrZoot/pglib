@@ -102,6 +102,15 @@ class Identity (db.Expando):
       return True
     else:
       return False
+      
+  def __repr__(self):
+    """return a python representation of the model"""
+    # TODO: rewrite this to deal with dynamic properties
+    return 'Identity(key_name='+str(self.key().name())+' email='+str(self.email)+' active='+str(self.active)+')'
+    
+  def __str__(self):
+    """return a string descripton for this instance"""
+    return 'Identity: ' + str(self.email)
 
 class Group (db.Model):
   """
@@ -195,6 +204,14 @@ class Group (db.Model):
       return True
     else:
       return False
+      
+  def __repr__(self):
+    """return a string representation for this instance"""
+    return 'Group(key_name='+str(self.key().name())+' name='+str(self.name)+' description='+str(self.description)+')'
+    
+  def __str__(self):
+    """return a description for this instance"""
+    return 'Group: ' + str(self.name)
           
   
 class Permission (db.Model):
@@ -241,6 +258,14 @@ class Permission (db.Model):
       return True
     else:
       return False
+      
+  def __repr__(self):
+    """return a rerpresentation for this model"""
+    return 'Permission(key_name='+str(self.key().name())+' name='+str(self.name)+' description='+str(self.description)+')'
+    
+  def __str__(self):
+    """return a description for this permission"""
+    return 'Permission: ' + str(self.name)
       
 class BindingModel(db.Model):
   """Base class to represent bindings between objects"""
