@@ -58,8 +58,7 @@ class Identity (db.Expando):
   def has_permission(self,permission):
     """Return true if the user has the specified permission."""
     permission = utils.verify_arg(permission,Permission)
-    permission_key_name = permission.key().name()
-    binding_key_name = permission_key_name + '_' + self.key().name()
+    binding_key_name = permission.key().name() + '_' + self.key().name()
     return PermissionBinding.get_by_key_name(binding_key_name)
     
   def has_permissions(self,permission_list):

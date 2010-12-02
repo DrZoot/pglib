@@ -12,16 +12,16 @@ import utils
 
 def create_permission(name,description=None):
   """Create a new permission or raise a DuplicateValue exception if a permission already exists with that name"""
-  uniqueness_query = models.Permission.all(keys_only=True).filter('name',name)
-  if uniqueness_query.get():
+  key_name = name.lower()
+  if models.Permission.get_by_key_name(key_name):
     raise exceptions.DuplicateValue(name)
   else:
-    key = models.Permission(key_name=name,name=name,description=description).put()
+    key = models.Permission(key_name=key_name,name=name,description=description).put()
     return models.Permission.get(key)
     
 def get_permission(name):
   """Return the given permission or none"""
-  return models.Permission.all().filter('name',name).get()
+  return models.Permission.get_by_key_name(name.lower())
   
 def permission_query(*args,**kwargs):
   """Return a query for permissions"""
@@ -31,7 +31,7 @@ def bind_permission(permission,subject):
   """Create a permission binding between the given permission and the subject (group/identity)"""
   permission = utils.verify_arg(permission,models.Permission)
   subject = utils.verify_arg(subject,models.Identity,models.Group)
-  permission_binding_name = permission.name + "_" + subject.key().name()
+  permission_binding_name = permission.key().name() + "_" + subject.key().name()
   if models.PermissionBinding.get_by_key_name(permission_binding_name):
     raise exceptions.BindingExists("PermissionBinding already exists")
   else:
@@ -42,7 +42,7 @@ def unbind_permission(permission,subject):
   """remove permission bindings for the given permission and subject"""
   permission = utils.verify_arg(permission,models.Permission)
   subject = utils.verify_arg(subject,models.Identity,models.Group)
-  permission_binding_name = permission.name + "_" + subject.key().name()
+  permission_binding_name = permission.key().name() + "_" + subject.key().name()
   binding = models.PermissionBinding.get_by_key_name(permission_binding_name)
   if binding:
     binding.delete()

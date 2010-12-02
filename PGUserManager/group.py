@@ -12,16 +12,16 @@ import utils
 
 def create_group(name,description=None):
   """create a group with the given name, if a group with the same name exists raise """
-  uniqueness_query = models.Group.all(keys_only=True).filter('name',name)
-  if uniqueness_query.get():
+  key_name = name.lower()
+  if models.Group.get_by_key_name(key_name):
     raise exceptions.DuplicateValue(name)
   else:
-    key = models.Group(key_name=name,name=name,description=description).put()
+    key = models.Group(key_name=key_name,name=name,description=description).put()
     return models.Group.get(key)
   
 def get_group(name):
   """return the group with the given name or none"""
-  return models.Group.all().filter('name',name).get()
+  return models.Group.get_by_key_name(name.lower())
   
 def group_query(*args,**kwargs):
   """return a query for groups"""
@@ -31,7 +31,7 @@ def add_member(group,identity):
   """add an identity to a group"""
   group = utils.verify_arg(group,models.Group)
   identity = utils.verify_arg(identity,models.Identity)
-  membership_binding_name = identity.email + "_" + group.name
+  membership_binding_name = identity.key().name() + "_" + group.key().name()
   if models.MembershipBinding.get_by_key_name(membership_binding_name):
     raise exceptions.BindingExists('MembershipBinding already exists')
   else:
@@ -42,7 +42,7 @@ def remove_member(group,identity):
   """remove an identity from a group"""
   group = utils.verify_arg(group,models.Group)
   identity = utils.verify(identity,models.Identity)
-  membership_binding_name = identity.email + "_" + group.name
+  membership_binding_name = identity.key().name() + "_" + group.key().name()
   binding = models.MembershipBinding.get_by_key_name(membership_binding_name)
   if binding:
     binding.delete()

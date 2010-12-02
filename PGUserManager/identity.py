@@ -14,18 +14,18 @@ def create_identity(email_address):
   """
   Creates a new identity in the datstore and returns the identity object or if the email has already been used raises an DuplicateValue exception with the 
   """
-  uniqueness_query = models.Identity.all(keys_only=True).filter('email',email_address)
-  if uniqueness_query.get():
+  key_name = email_address.lower()
+  if models.Identity.get_by_key_name(key_name):
     raise exceptions.DuplicateValue(email_address)
   else:
-    key = models.Identity(key_name=email_address,email=email_address).put()
+    key = models.Identity(key_name=key_name,email=email_address).put()
     return models.Identity.get(key)
 
 def get_identity(email_address):
   """
   Given an email address try to return a datastore object for it using the email_address as a key_name
   """
-  return models.Identity.get_by_key_name(email_address)
+  return models.Identity.get_by_key_name(email_address.lower())
   
 def identity_query(*args,**kwargs):
   """
@@ -35,4 +35,5 @@ def identity_query(*args,**kwargs):
   
 def identity_for_current_user():
   """Return the identity for the currently logged on user or None"""
-  return identity.get_identity(users.get_current_user().email())
+  key_name = users.get_current_user().email().lower()
+  return models.Identity.get_by_key_name(key_name)
