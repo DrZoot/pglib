@@ -13,3 +13,30 @@ If you are interested in working on any of these, email p.gower@gmail.com
   - Figure out how to do read only properties, there are whole bunches of stuff that i dont want people to be able to change ever
   - make all methods obey active status, except xx_query
   - Modify tests to be a bit more efficient
+  - use the results of the below tests to optimize all read operations
+  - add member_of method to identity model
+  - make sure all models have methods to retrieve all of their dependants
+  - move group add_member, add_members to group model
+  
+* Timeit Results
+400 identities
+db.get([i.key() for i in identity.identity_query()])
+4.61978602409
+4.79311990738
+4.68706297874
+4.87616991997
+4.54648017883
+
+db.get([k for k in identity.identity_query(keys_only=True)])
+3.40176010132
+3.44008708
+3.51482892036
+3.5808339119
+3.35405778885
+
+[i for i in identity.identity_query()]
+2.3810839653
+2.37036108971
+2.44242405891
+2.37455201149
+2.38139295578
