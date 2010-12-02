@@ -7,7 +7,6 @@ from PGUserManager import models
 from google.appengine.ext import db
 
 class FunctionTesting(unittest.TestCase):
-  
   def setUp(self):
     for i in range(10):
       identity.create_identity('User' + str(i) + '@example.org')
@@ -68,7 +67,39 @@ class FunctionTesting(unittest.TestCase):
     self.assertEqual(p.owner_bindings.get().key(), pb.key(), 'Permission owner_binding back-reference must match retrieved PermissionBinding')
     
 class InstanceMethodTesting(unittest.TestCase):
-  pass
+  def setUp(self):
+    groups = []
+    for g in ['Group0','Group1']:
+      groups.append(group.create_group(g))
+    i = identity.create_identity('user1@example.org')
+    group.add_member(groups[0],i)
+    permissions = []
+    for j in range(5):
+      p = permission.create_permission('Permission'+str(j))
+      permission.bind_permission(p,i)
+    for j in range(5,10):
+      p = permission.create_permission('Permission'+str(j))
+      permission.bind_permission(p,groups[0])
+      
+  def testAssociatedWith(self):
+    # return true when passed subjects that are associated
+    g_one = group.get_group('Group0')
+    g_two = group.get_group('Group1')
+    i = identity.get_identity('user1@example.org')
+    p_one = [permission.get_permission(x) for x in ['Permission'+str(y) for y in [0,1,2,3,4]]]
+    p_two = [permission.get_permission(x) for x in ['Permission'+str(y) for y in [5,6,7,8,9]]]
+    for p in p_one:
+      self.assert_(p.associated_with(i), 'Must return true for all identities / groups the permission is associated with')
+    for p in p_two:
+      self.assert_(not p.associated_with(i), 'Must return false for all identities / groups the permission is not associated with')
+    for p in p_one:
+      self.assert_(not p.associated_with(g_one), 'Must return false for all identities / groups the permission is not associated with')
+    for p in p_two:
+      self.assert_(p.associated_with(g_one), 'Must return true for all identities / groups the permission is associated with')
+      
+      
+  
+  
     
     
     

@@ -184,7 +184,6 @@ class GroupHasPermissions(unittest.TestCase):
   def testValidValues(self):
     # ensure that has_permissions return true given any combination of valid permissions
     permissions = [permission.get_permission(n) for n in ['Permission20','Permission21','Permission22','Permission23','Permission24']]
-    identities = [i for i in identity.identity_query().order('email')]
     groups = [g for g in group.group_query().order('name')]
     for p in range(1,5):
       self.assert_(groups[0].has_permissions(permissions[0:p]), 'Group must return true to any combination of bound permissions')
