@@ -56,19 +56,11 @@ class Identity (db.Expando):
     return list(set(permissions))
     
   def has_permission(self,permission):
-    """
-    Return true if the user has the specified permission. 
-    Can be specified as a permission name (string) or the key of a permission (key). 
-    Cannot be specified as a stringified permission key.
-    If the user is inactive this always returns false
-    ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
-    """
+    """Return true if the user has the specified permission."""
     permission = utils.verify_arg(permission,Permission)
-    current_permissions = self.get_all_permissions()
-    if permission in current_permissions:
-      return True
-    else:
-      return False
+    permission_key_name = permission.key().name()
+    binding_key_name = permission_key_name + '_' + self.key().name()
+    return PermissionBinding.get_by_key_name(binding_key_name)
     
   def has_permissions(self,permission_list):
     """
@@ -304,6 +296,14 @@ class PermissionBinding (BindingModel):
   def __hash__(self):
     """Return a hash for this model instance"""
     return hash((str(self.permission_key()),str(self.subject_key())))
+    
+  def __repr__(self):
+    """returns a representation for this model"""
+    return 'PermissionBinding(key_name='+str(self.key().name())+' permission='+str(self.permission_key())+' subject='+str(self.subject_key())+')'
+    
+  def __str__(self):
+    """return a description for this model"""
+    return 'PermissionBinding: '+str(self.key().name()).replace('_',' <=> ')
 
 class MembershipBinding (BindingModel):
   """Object for storing user group membership."""
@@ -321,3 +321,11 @@ class MembershipBinding (BindingModel):
   def __hash__(self):
     """Return a hash for this model instance"""
     return hash((str(self.identity_key()),str(self.group_key())))
+    
+  def __repr__(self):
+    """return a representation for this model"""
+    return 'MembershipBinding(key_name='+str(self.key().name())+' identity='+str(self.identity_key())+' group='+str(self.group_key())+')'
+    
+  def __str__(self):
+    """return a description for this model instance"""
+    return 'MembershipBinding: '+str(self.key().name()).replace('_',' <=> ')
