@@ -37,23 +37,21 @@ class Identity (db.Expando):
     super(Identity, self).delete()
     
   def get_group_permissions(self):
-    """
-    --Description--
-    Return a list of permissions which this identity has through its group memberships.
-    """
+    """Return a list of permissions which this identity has through its group memberships."""
     # TODO: compare this with using the Group.get_all_permissions method on each group and list(set([])) the result
-    group_keys = [membership_binding.group_key() for membership_binding in MembershipBinding.all().filter('identity',self)]
-    permissions = list(set(db.get([permission_binding.permission_key() for permission_binding in PermissionBinding.all().filter('subject IN',group_keys)])))
-    return permissions
+    groups = self.get_all_groups()
+    permissions = []
+    for g in groups:
+      permissions = permissions + [binding.permission for binding in g.permission_bindings]
+    return list(frozenset(permissions))
     
   def get_all_permissions(self):
     """
     Return a list of permissions this user has both through group and user permissions.
     """
-    permissions = self.get_group_permissions()
-    direct_permission_keys = [permission_binding.permission_key() for permission_binding in self.permission_bindings]
-    permissions = permissions + db.get(direct_permission_keys)
-    return list(set(permissions))
+    group_permissions = self.get_group_permissions()
+    direct_permissions = [binding.permission for binding in self.permission_bindings]
+    return list(set(group_permissions + direct_permissions))
     
   def has_permission(self,permission):
     """Return true if the user has the specified permission."""
@@ -72,6 +70,28 @@ class Identity (db.Expando):
     permission_set = frozenset(permission_list)
     current_permissions = frozenset(self.get_all_permissions())
     return permission_set.issubset(current_permissions)
+
+  def member_of_group(self,group):
+    """given a group return true if the identity is a member of it"""
+    group = utils.verify_arg(group,Group)
+    binding_key_name = self.key().name() + '_' + group.key().name()
+    binding = MembershipBinding.get_by_key_name(binding_key_name)
+    if binding.active:
+      return True
+    else:
+      return False
+    
+  def member_of_groups(self,groups_list):
+    """return true if the current identity belongs to all of the specified groups"""
+    for i,group in zip(range(len(groups_list)),groups_list):
+      permission_list[i] = utils.verify_arg(group,Group)
+    # TODO: should probably in its own method, get_all_groups
+    all_groups = [binding.group for binding in MembershipBinding.all().filter('identity',self).filter('active',True)]
+    return frozenset(groups_list).issubset(frozenset(all_groups))
+    
+  def get_all_groups(self):
+    """return a list of all groups this identity belongs to"""
+    return [binding.group for binding in MembershipBinding.all().filter('identity',self).filter('active',True)]
     
   def __hash__(self):
     """Return a hash for this model instance"""
@@ -102,6 +122,21 @@ class Identity (db.Expando):
   def __str__(self):
     """return a string descripton for this instance"""
     return 'Identity: ' + str(self.email)
+    
+  def __setattr__(self,name,value):
+    """override setting the active value and update the membership bindings at the same time"""
+    if name == 'active':
+      if value != self.active:
+        db.Expando.__setattr__(self, name, value)
+        membership_bindings = []
+        for membership_binding in self.group_bindings:
+          membership_binding.active = value
+          membership_bindings.append(membership_binding)
+        db.put(membership_bindings)
+        # TODO: make sure this is mentioned in docs and remembered, could be a real performance bitch if people didnt know it was doing this
+        self.put()
+    else:
+      db.Expando.__setattr__(self, name, value)          
 
 class Group (db.Model):
   """
@@ -117,7 +152,7 @@ class Group (db.Model):
   def delete(self):
     """
     --Description--
-    Override the model delete method to remove any memebers of this group before it is deleted.
+    Override the model delete method to remove any members of this group before it is deleted.
     """
     # Delete Permission Bindings
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
@@ -158,6 +193,8 @@ class Group (db.Model):
   def get_all_members(self):
     """Return a list of identities attached to this group.
     """
+    members = [binding.identity for binding in self.identity_bindings]
+    
     return db.get([membership_binding.identity_key() for membership_binding in self.identity_bindings])
     
   def has_member(self,identity):
@@ -308,6 +345,7 @@ class MembershipBinding (BindingModel):
   """Object for storing user group membership."""
   identity = db.ReferenceProperty(required=True,reference_class=Identity,collection_name='group_bindings')
   group = db.ReferenceProperty(required=True,reference_class=Group,collection_name='identity_bindings')
+  active = db.BooleanProperty(default=True)
     
   def identity_key(self):
     """return the key for the referenced identity"""
