@@ -111,7 +111,8 @@ class InstanceMethodTesting(unittest.TestCase):
   def testHasPermission(self):
     # test that has_permission returns true for all permissions
     i = identity.get_identity('user1@example.org')
-    for p in permission.permission_query():
+    for a in ['Permission0','Permission1','Permission2','Permission3','Permission4']:
+      p = permission.get_permission(a)
       self.assert_(i.has_permission(p), 'Identity must have all passed permissions')
     p_invalid = []
     for p in range(10):
