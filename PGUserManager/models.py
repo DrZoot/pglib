@@ -213,6 +213,27 @@ class Group (db.Model):
     current_members = frozenset(self.get_all_members())
     return frozenset(identity_list).issubset(current_members)
     
+  def add_member(self, identity):
+    """Add the given identity to this group"""
+    identity = utils.verify_arg(identity,Identity)
+    membership_binding_name = identity.key().name() + "_" + self.key().name()
+    if MembershipBinding.get_by_key_name(membership_binding_name):
+      raise exceptions.BindingExists('MembershipBinding already exists')
+    else:
+      key = MembershipBinding(key_name=membership_binding_name,group=self,identity=identity).put()
+      return MembershipBinding.get(key)
+      
+  def remove_member(self, identity):
+    """docstring for remove_member"""
+    identity = utils.verify(identity,Identity)
+    membership_binding_name = identity.key().name() + "_" + self.key().name()
+    binding = models.MembershipBinding.get_by_key_name(membership_binding_name)
+    if binding:
+      binding.delete()
+      return True # found and deleted
+    else:
+      return None # not found
+    
   def __hash__(self):
     """Return a hash for this model instance"""
     static_prop_values = frozenset([getattr(self,pv) for pv in ['name','description']])
