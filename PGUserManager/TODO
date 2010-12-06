@@ -14,9 +14,10 @@ If you are interested in working on any of these, email p.gower@gmail.com
   - make all methods obey active status, except xx_query
   - Modify tests to be a bit more efficient
   - use the results of the below tests to optimize all read operations
-  - add member_of method to identity model
   - make sure all models have methods to retrieve all of their dependants
-  - move group add_member, add_members to group model
+  - make create_identity accept an unlimited number of kwarg arguments and then turn them into dynamic params on the identity
+  - memcache stuff
+  - setup some sort of profiling
   
 * Timeit Results
 400 identities
