@@ -27,31 +27,6 @@ def permission_query(*args,**kwargs):
   """Return a query for permissions"""
   return models.Permission.all(*args,**kwargs)
   
-def bind_permission(permission,subject):
-  """Create a permission binding between the given permission and the subject (group/identity)"""
-  permission = utils.verify_arg(permission,models.Permission)
-  subject = utils.verify_arg(subject,models.Identity,models.Group)
-  permission_binding_name = permission.key().name() + "_" + subject.key().name()
-  if models.PermissionBinding.get_by_key_name(permission_binding_name):
-    raise exceptions.BindingExists("PermissionBinding already exists")
-  else:
-    key = models.PermissionBinding(key_name=permission_binding_name,permission=permission,subject=subject).put()
-    return models.PermissionBinding.get(key)
-    
-def unbind_permission(permission,subject):
-  """remove permission bindings for the given permission and subject"""
-  permission = utils.verify_arg(permission,models.Permission)
-  subject = utils.verify_arg(subject,models.Identity,models.Group)
-  permission_binding_name = permission.key().name() + "_" + subject.key().name()
-  binding = models.PermissionBinding.get_by_key_name(permission_binding_name)
-  if binding:
-    binding.delete()
-    # if we found a binding and deleted it return true
-    return True
-  else:
-    # if we did not find a binding return None, no exception because the bindings are in the state expected
-    return None
-    
 def unbind_permission_from_subjects(permission,subjects):
   """remove 1 permission from multiple subjects"""
   pass

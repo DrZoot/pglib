@@ -288,6 +288,27 @@ class Permission (db.Model):
     else:
       return False
       
+  def bind_to(self,subject):
+    """Bind this permission to the given subject"""
+    subject = utils.verify_arg(subject,Identity,Group)
+    permission_binding_name = self.key().name() + "_" + subject.key().name()
+    if PermissionBinding.get_by_key_name(permission_binding_name):
+      raise exceptions.BindingExists("PermissionBinding already exists")
+    else:
+      key = PermissionBinding(key_name=permission_binding_name,permission=self,subject=subject).put()
+      return PermissionBinding.get(key)
+      
+  def unbind_from(self,subject):
+    """Unbind this permission from the given subject"""
+    subject = utils.verify_arg(subject,Identity,Group)
+    permission_binding_name = self.key().name() + "_" + subject.key().name()
+    binding = PermissionBinding.get_by_key_name(permission_binding_name)
+    if binding:
+      binding.delete()
+      return True # found and deleted
+    else:
+      return None # not found
+    
   def __hash__(self):
     """Return a hash for this model instance"""
     static_prop_values = frozenset([getattr(self,pv) for pv in ['name','description']])
