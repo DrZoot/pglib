@@ -171,6 +171,19 @@ class IdentityHasPermissions(unittest.TestCase):
     def invalid_args(self):
       i.has_permissions([1,'a'])
     self.assertRaises(TypeError, invalid_args)
+    
+class ActiveIdentity(unittest.TestCase):
+  def test_RetrieveInactiveIdentity(self):
+    # Retrieving an inactive identity should return false
+    i = identity.create_identity('user1@example.org',active=False)
+    self.assert_(identity.get_identity('user1@example.org') == None, 'Trying to retrieve an inactive identity using get_identity should return false')
+    
+  def test_QueryInactiveIdentity(self):
+    # Query for an inactive identity should return true
+    i = identity.create_identity('user1@example.org',active=False)
+    qr = identity.identity_query().filter('email','user1@example.org').get()
+    self.assert_(isinstance(qr,models.Identity), 'Query for an inactive identitiy should return the identity')
+    
       
     
     
