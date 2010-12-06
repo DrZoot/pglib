@@ -196,27 +196,32 @@ class Group (db.Model):
     current_permissions = frozenset(self.get_all_permissions())
     return frozenset(permission_list).issubset(current_permissions)
     
-  def get_all_members(self):
+  def get_all_members(self,include_inactive=False):
     """Return a list of identities attached to this group.
     """
-    members = [binding.identity for binding in self.identity_bindings]
-    
-    return db.get([membership_binding.identity_key() for membership_binding in self.identity_bindings])
-    
-  def has_member(self,identity):
-    """Return true if the given identity is part of this group"""
-    if MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).get():
-      return True
+    if include_inactive:
+      members = [binding.identity for binding in self.identity_bindings]
     else:
-      return False
+      members = [binding.identity for binding in MembershipBinding.all().filter('group',self).filter('active',True)]
+    return members
     
-  def has_members(self,identity_list):
+  def has_member(self,identity,include_inactive=False):
+    """Return true if the given identity is part of this group"""
+    if include_inactive:
+      membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).get()
+      if membership_binding: return True
+    else:
+      membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).filter('active',True).get()
+      if membership_binding: return True
+    return False
+    
+  def has_members(self,identity_list,include_inactive=False):
     """Return true if all of the given identities are part of this group"""
     if identity_list == []:
       return False
     for i,identity in zip(range(len(identity_list)),identity_list):
       identity_list[i] = utils.verify_arg(identity,Identity)
-    current_members = frozenset(self.get_all_members())
+    current_members = frozenset(self.get_all_members(include_inactive=include_inactive))
     return frozenset(identity_list).issubset(current_members)
     
   def add_member(self, identity):
