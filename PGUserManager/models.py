@@ -8,6 +8,7 @@ Copyright 2010 Monotone Software. All rights reserved.
 Models for PGUserManager
 """
 from google.appengine.ext import db
+from google.appengine.api import memcache
 import utils
 import exceptions
 import logging
@@ -55,9 +56,17 @@ class Identity (db.Expando):
     
   def has_permission(self,permission):
     """Return true if the user has the specified permission."""
+    # TODO: use memcache to speed this up
     permission = utils.verify_arg(permission,Permission)
     binding_key_name = permission.key().name() + '_' + self.key().name()
-    return PermissionBinding.get_by_key_name(binding_key_name)
+    if PermissionBinding.get_by_key_name(binding_key_name):
+      return True
+    else:
+      groups = db.get([mb.group_key() for mb in self.group_bindings])
+      for group in groups:
+        if group.has_permission(permission):
+          return True
+    return False
     
   def has_permissions(self,permission_list):
     """
@@ -151,7 +160,6 @@ class Group (db.Model):
   
   def delete(self):
     """
-    --Description--
     Override the model delete method to remove any members of this group before it is deleted.
     """
     # Delete Permission Bindings
@@ -162,19 +170,17 @@ class Group (db.Model):
     
   def get_all_permissions(self):
     """
-    Return a list of permissions this user has both through group and user permissions.
+    Return a list of permissions this group has.
     """
+    # TODO: investigate more efficient ways of doing this
     return db.get([permission_binding.permission_key() for permission_binding in self.permission_bindings])
 
   def has_permission(self,permission):
     """
-    Return true if the user has the specified permission. 
-    Can be specified as a permission name (string) or the key of a permission (key). 
-    Cannot be specified as a stringified permission key.
-    If the user is inactive this always returns false
-    ident_perm_list is a PRIVATE PARAMETER it shouldnt be called outside of the model class.
+    Return true if the group has the specified permission. 
     """
-    if PermissionBinding.all(keys_only=True).filter('subject',self).filter('permission',permission).get():
+    permission_binding_name = permission.key().name() + "_" + self.key().name()
+    if PermissionBinding.get_by_key_name(permission_binding_name):
       return True
     else:
       return False
