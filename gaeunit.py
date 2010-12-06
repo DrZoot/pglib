@@ -156,6 +156,7 @@ class JsonTestResult(unittest.TestResult):
             d = { 
               'desc': test.shortDescription() or str(test), 
               'detail': err,
+              'ut_id': test.id()
             }
             dict.append(d)
         return dict
@@ -365,15 +366,19 @@ _MAIN_PAGE_CONTENT = """
                     var failures = result.failures;
                     var details = "";
                     for(var i=0; i<errors.length; i++) {
-                        details += '<p><div class="error"><div class="errtitle">ERROR ' +
+                        details += '<p><div class="error"><a href="/test?name=' +
+                                   errors[i].ut_id + 
+                                   '"><div class="errtitle">ERROR ' +
                                    errors[i].desc +
-                                   '</div><div class="errdetail"><pre>'+errors[i].detail +
+                                   '</div></a><div class="errdetail"><pre>'+errors[i].detail +
                                    '</pre></div></div></p>';
                     }
                     for(var i=0; i<failures.length; i++) {
-                        details += '<p><div class="error"><div class="errtitle">FAILURE ' +
+                        details += '<p><div class="error"><a href="/test?name=' +
+                                    errors[i].ut_id + 
+                                    '"><div class="errtitle">FAILURE ' +
                                     failures[i].desc +
-                                    '</div><div class="errdetail"><pre>' +
+                                    '</div></a><div class="errdetail"><pre>' +
                                     failures[i].detail +
                                     '</pre></div></div></p>';
                     }
