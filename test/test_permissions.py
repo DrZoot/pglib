@@ -8,98 +8,66 @@ from google.appengine.ext import db
 
 class FunctionTesting(unittest.TestCase):
   def setUp(self):
-    for i in range(10):
-      identity.create_identity('User' + str(i) + '@example.org')
-    for g in range(5):
-      group.create_group('Group' + str(g))
+    i = identity.create_identity('user1@example.org')
+    g = group.create_group('Group1')
+    permissions = [permission.create_permission(p) for p in ['Permission1','Permission2','Permission3']]
   
-  def testCreatePermission(self):
+  def test_CreatePermission(self):
     # create a permission object
-    p = permission.create_permission('Permission1')
+    p = permission.create_permission('Permission4')
     self.assert_(isinstance(p,models.Permission), 'Must return an object of type models.Permission')
     
-  def testCreateDuplicatePermission(self):
+  def test_CreateDuplicatePermission(self):
     # create a permission with a name thats already used
-    permission.create_permission('Permission1')
     def create_dupe_permission():
       return permission.create_permission('Permission1')
     self.assertRaises(exceptions.DuplicateValue, create_dupe_permission)
     
-  def testRetrieveGroupByName(self):
-    # retrieve a group using a string name
-    permission.create_permission('Permission1')
+  def test_RetrievePermissionByName(self):
+    # retrieve a permission using a string name
     p = permission.get_permission('Permission1')
     self.assert_(isinstance(p,models.Permission), 'Must return an object of type models.Permission')
     self.assert_(p.name == 'Permission1', 'Returned object must be the one queried')
     
-  def testCreatePermissionQuery(self):
+  def test_CreatePermissionQuery(self):
     # create a permission query
     self.assert_(isinstance(permission.permission_query(),db.Query), 'Must return a db.Query object')
     
-  def testDeletePermission(self):
+  def test_DeletePermission(self):
     # delete a permission from the datastore
-    p = permission.create_permission('Permission1')
+    p = permission.get_permission('Permission1')
     p.delete()
     self.assertEqual(None, permission.get_permission('Permission1'), 'Deleted object should no longer exist in the datastore')
     
-  def testBindPermissionToGroup(self):
+  def test_BindPermissionToGroup(self):
     # bind a permission to a group
-    p = permission.create_permission('Permission1')
     g = group.get_group('Group1')
-    permission.bind_permission(p,g)
-    pb = models.PermissionBinding.all().filter('permission',p).filter('subject',g).get()
-    self.assert_(isinstance(pb,models.PermissionBinding), 'PermissionBinding must exist and be of type models.PermissionBinding')
-    self.assertEqual(p.key(), pb.permission.key(), 'PermissionBinding permission key must match bound permission')
-    self.assertEqual(g.key(), pb.subject.key(), 'PermissionBinding subject key must match bound group')
-    self.assertEqual(g.permission_bindings.get().key(), pb.key(), 'Group permission_binding back-reference must match retrieved PermissionBinding')
-    self.assertEqual(p.owner_bindings.get().key(), pb.key(), 'Permission owner_binding back-reference must match retrieved PermissionBinding')
+    permissions = [permission.get_permission(p) for p in ['Permission1','Permission2','Permission3']]
+    for p in permissions:
+      p.bind_to(g)
+    self.assert_(g.has_permissions(permissions), 'Group should return all bound permissions')
     
-  def testBindPermissionToIdentity(self):
+  def test_BindPermissionToIdentity(self):
     # bind a permission to an identity
-    p = permission.create_permission('Permission1')
-    i = identity.get_identity('User1@example.org')
-    permission.bind_permission(p,i)
-    pb = models.PermissionBinding.all().filter('permission',p).filter('subject',i).get()
-    self.assert_(isinstance(pb,models.PermissionBinding), 'PermissionBinding must exist and be of type models.PermissionBinding')
-    self.assertEqual(p.key(), pb.permission.key(), 'PermissionBinding permission key must match bound permission')
-    self.assertEqual(i.key(), pb.subject.key(), 'PermissionBinding subject key must match bound identity')
-    self.assertEqual(i.permission_bindings.get().key(), pb.key(), 'Identity permission_binding back-reference must match retrieved PermissionBinding')
-    self.assertEqual(p.owner_bindings.get().key(), pb.key(), 'Permission owner_binding back-reference must match retrieved PermissionBinding')
+    i = identity.get_identity('user1@example.org')
+    permissions = [permission.get_permission(p) for p in ['Permission1','Permission2','Permission3']]
+    for p in permissions:
+      p.bind_to(i)
+    self.assert_(i.has_permissions(permissions), 'Identity should return all bound permissions')
     
 class InstanceMethodTesting(unittest.TestCase):
   def setUp(self):
-    groups = []
-    for g in ['Group0','Group1']:
-      groups.append(group.create_group(g))
-    i = identity.create_identity('user1@example.org')
-    group.add_member(groups[0],i)
-    permissions = []
-    for j in range(5):
-      p = permission.create_permission('Permission'+str(j))
-      permission.bind_permission(p,i)
-    for j in range(5,10):
-      p = permission.create_permission('Permission'+str(j))
-      permission.bind_permission(p,groups[0])
+    groups = [group.create_group(g) for g in ['Group1','Group2']]
+    identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org']]
+    permissions = [permission.create_permission(p) for p in ['Permission1','Permission2']]
+    permissions[0].bind_to(groups[0])
+    permissions[1].bind_to(identities[0])
       
-  def testAssociatedWith(self):
+  def test_AssociatedWith(self):
     # return true when passed subjects that are associated
-    g_one = group.get_group('Group0')
-    g_two = group.get_group('Group1')
+    g = group.get_group('Group1')
     i = identity.get_identity('user1@example.org')
-    p_one = [permission.get_permission(x) for x in ['Permission'+str(y) for y in [0,1,2,3,4]]]
-    p_two = [permission.get_permission(x) for x in ['Permission'+str(y) for y in [5,6,7,8,9]]]
-    for p in p_one:
-      self.assert_(p.associated_with(i), 'Must return true for all identities / groups the permission is associated with')
-    for p in p_two:
-      self.assert_(not p.associated_with(i), 'Must return false for all identities / groups the permission is not associated with')
-    for p in p_one:
-      self.assert_(not p.associated_with(g_one), 'Must return false for all identities / groups the permission is not associated with')
-    for p in p_two:
-      self.assert_(p.associated_with(g_one), 'Must return true for all identities / groups the permission is associated with')
-      
-      
-  
-  
-    
-    
-    
+    p_g = permission.get_permission('Permission1')
+    p_i = permission.get_permission('Permission2')
+    self.assert_(p_g.associated_with(g), 'Should return true if bound')
+    self.assert_(p_i.associated_with(i), 'Should return true if bound')
