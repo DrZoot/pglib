@@ -40,24 +40,38 @@ class Identity (db.Expando):
   def get_group_permissions(self):
     """Return a list of permissions which this identity has through its group memberships."""
     # TODO: compare this with using the Group.get_all_permissions method on each group and list(set([])) the result
-    groups = self.get_all_groups()
-    permissions = []
-    for g in groups:
-      permissions = permissions + [binding.permission for binding in g.permission_bindings]
-    return list(frozenset(permissions))
+    cache_key = self.key().name()+'_group_permissions'
+    cache_val = memcache.get(cache_key)
+    if cache_val:
+      return cache_val
+    else:
+      groups = self.get_all_groups()
+      permissions = []
+      for g in groups:
+        permissions = permissions + [binding.permission for binding in g.permission_bindings]
+      deduped_permissions = list(frozenset(permissions))
+      memcache.set(cache_key,deduped_permissions)
+      return deduped_permissions
     
   def get_all_permissions(self):
     """
     Return a list of permissions this user has both through group and user permissions.
     """
-    group_permissions = self.get_group_permissions()
-    direct_permissions = [binding.permission for binding in self.permission_bindings]
-    return list(set(group_permissions + direct_permissions))
+    cache_key = self.key().name()+'_all_permissions'
+    cache_val = memcache.get(cache_key)
+    if cache_val:
+      return cache_val
+    else:
+      group_permissions = self.get_group_permissions()
+      direct_permissions = [binding.permission for binding in self.permission_bindings]
+      deduped_permissions = list(frozenset(group_permissions + direct_permissions))
+      memcache.set(cache_key,deduped_permissions)
+      return deduped_permissions
     
   def has_permission(self,permission):
     """Return true if the user has the specified permission."""
-    # TODO: use memcache to speed this up
     permission = utils.verify_arg(permission,Permission)
+    cache_key = self.key().name()+'_'+permission.key().name()
     binding_key_name = permission.key().name() + '_' + self.key().name()
     if PermissionBinding.get_by_key_name(binding_key_name):
       return True
