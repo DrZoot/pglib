@@ -375,7 +375,7 @@ _MAIN_PAGE_CONTENT = """
                     }
                     for(var i=0; i<failures.length; i++) {
                         details += '<p><div class="error"><a href="/test?name=' +
-                                    errors[i].ut_id + 
+                                    failures[i].ut_id + 
                                     '"><div class="errtitle">FAILURE ' +
                                     failures[i].desc +
                                     '</div></a><div class="errdetail"><pre>' +
