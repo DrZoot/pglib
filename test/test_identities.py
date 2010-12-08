@@ -176,7 +176,7 @@ class ActiveIdentity(unittest.TestCase):
   def test_RetrieveInactiveIdentity(self):
     # Retrieving an inactive identity should return false
     i = identity.create_identity('user1@example.org',active=False)
-    self.assert_(identity.get_identity('user1@example.org') == None, 'Trying to retrieve an inactive identity using get_identity should return false')
+    self.assert_(identity.get_identity('user1@example.org') == None, 'Trying to retrieve an inactive identity using get_identity should return None')
     
   def test_QueryInactiveIdentity(self):
     # Query for an inactive identity should return true

@@ -156,6 +156,47 @@ class GroupHasPermissions(unittest.TestCase):
     g = group.get_group('Group1')
     permissions = [permission.get_permission(p) for p in ['InvalidPermission1','InvalidPermission2']]
     self.assert_(not g.has_permissions(permissions), 'Group must return false for any combination of unbound permissions')
+    
+class GroupWithInactiveMembers(unittest.TestCase):
+  def setUp(self):
+    g = group.create_group('Group1')
+    identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org','user3@example.org','user4@example.org']]
+    for i in identities:
+      g.add_member(i)
+    
+  def test_GetAllMembersWithInactives(self):
+    # ensure that get all members does not return inactive group members (unless told to with include_inactive=True)
+    g = group.get_group('Group1')
+    identities = [identity.get_identity(i) for i in ['user1@example.org','user2@example.org','user3@example.org','user4@example.org']]
+    self.assert_(frozenset(g.get_all_members()) == frozenset(identities), 'get_all_members should return all bound identities that are active')
+    identities[0].active = False
+    identities[0].put()
+    self.assert_(frozenset(g.get_all_members()) == frozenset(identities[1:]), 'get_all_members should only return identities that are active')
+    self.assert_(frozenset(g.get_all_members(include_inactive=True)) == frozenset(identities), 'get_all_members should return all identities regardless of active status when passed include_inactive')
+    
+  def test_HasMemberWithInactive(self):
+    # ensure that has_member returns false when the given identity is inactive
+    g = group.get_group('Group1')
+    i = identity.get_identity('user1@example.org')
+    self.assert_(g.has_member(i), 'has_member should return true for bound active identities')
+    i.active = False
+    i.put()
+    self.assert_(not g.has_member(i), 'has_member should return false for inactive bound identities')
+    self.assert_(g.has_member(i,include_inactive=True), 'has_member should return true for bound inactive identities when passed the include_inactive param')
+    
+  def test_HasMembersWithInactive(self):
+    # ensure that has_members return false when bound but inactive identities are passed
+    g = group.get_group('Group1')
+    identities = [identity.get_identity(i) for i in ['user1@example.org','user2@example.org','user3@example.org','user4@example.org']]
+    self.assert_(g.has_members(identities), 'has_members should return true if all identities passed are bound and active')
+    identities[0].active = False
+    identities[0].put()
+    self.assert_(not g.has_members(identities), 'has_members should return false if not all identities passed are active and bound')
+    self.assert_(g.has_members(identities[1:]))
+    self.assert_(g.has_members(identities,include_inactive=True), 'has_members should return true if all passed identites are bound regardless of active status')
+    
+    
+    
       
     
       
