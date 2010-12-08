@@ -28,7 +28,7 @@ def get_identity(email_address,include_inactive=False):
   i = models.Identity.get_by_key_name(email_address.lower())
   if i == None:
     return None
-  else if i.active:
+  elif i.active:
     return i
   else:
     if include_inactive:
