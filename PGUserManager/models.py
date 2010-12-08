@@ -28,9 +28,9 @@ class Identity (db.Expando):
   active = db.BooleanProperty(default=True)
     
   def delete(self):
-    """
-    Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete.
-    """
+    """Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete."""
+    # Delete dependant memcache keys
+    utils.remove_dependants(self)
     # Delete Permission Bindings
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
     # Delete Group Bindings
@@ -46,10 +46,12 @@ class Identity (db.Expando):
       return cache_val
     else:
       groups = self.get_all_groups()
+      utils.add_dependants(cache_key,groups)
       permissions = []
       for g in groups:
-        permissions = permissions + [binding.permission for binding in g.permission_bindings]
+        permissions = permissions + g.get_all_permissions()
       deduped_permissions = list(frozenset(permissions))
+      utils.add_dependants(cache_key,deduped_permissions)
       memcache.set(cache_key,deduped_permissions)
       return deduped_permissions
     
@@ -62,8 +64,12 @@ class Identity (db.Expando):
     if cache_val:
       return cache_val
     else:
+      groups = self.get_all_groups()
+      utils.add_dependants(cache_key,groups)
       group_permissions = self.get_group_permissions()
+      utils.add_dependants(cache_key,group_permissions)
       direct_permissions = [binding.permission for binding in self.permission_bindings]
+      utils.add_dependants(cache_key,direct_permissions)
       deduped_permissions = list(frozenset(group_permissions + direct_permissions))
       memcache.set(cache_key,deduped_permissions)
       return deduped_permissions
@@ -71,16 +77,25 @@ class Identity (db.Expando):
   def has_permission(self,permission):
     """Return true if the user has the specified permission."""
     permission = utils.verify_arg(permission,Permission)
-    cache_key = self.key().name()+'_'+permission.key().name()
-    binding_key_name = permission.key().name() + '_' + self.key().name()
-    if PermissionBinding.get_by_key_name(binding_key_name):
-      return True
-    else:
-      groups = db.get([mb.group_key() for mb in self.group_bindings])
-      for group in groups:
-        if group.has_permission(permission):
-          return True
-    return False
+    cache_key = self.key().name()+'_has_'+permission.key().name()
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
+    else:      
+      binding_key_name = permission.key().name() + '_' + self.key().name()
+      if PermissionBinding.get_by_key_name(binding_key_name):
+        utils.add_dependants(cache_key,[permission])
+        memcache.set(cache_key,True)
+        return True
+      else:
+        groups = db.get([mb.group_key() for mb in self.group_bindings])
+        for group in groups:
+          if group.has_permission(permission):
+            utils.add_dependants(cache_key,[group,permission])
+            memcache.set(cache_key,True)
+            return True
+      # dont memcache here because im not sure how you would ever get this data out, it would have no dependents
+      return False
     
   def has_permissions(self,permission_list):
     """
