@@ -9,6 +9,7 @@ Models for PGUserManager
 """
 from google.appengine.ext import db
 from google.appengine.api import memcache
+from google.appengine.api import apiproxy_stub_map
 import utils
 import exceptions
 import logging
@@ -29,8 +30,8 @@ class Identity (db.Expando):
     
   def delete(self):
     """Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete."""
-    # Delete dependant memcache keys
-    utils.remove_dependants(self)
+    # Delete dependent memcache keys
+    utils.remove_dependants([self])
     # Delete Permission Bindings
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
     # Delete Group Bindings
@@ -95,6 +96,7 @@ class Identity (db.Expando):
             memcache.set(cache_key,True)
             return True
       # dont memcache here because im not sure how you would ever get this data out, it would have no dependents
+      # TODO: revist this
       return False
     
   def has_permissions(self,permission_list):
@@ -105,31 +107,48 @@ class Identity (db.Expando):
       return False
     for i,permission in zip(range(len(permission_list)),permission_list):
       permission_list[i] = utils.verify_arg(permission,Permission)
-    permission_set = frozenset(permission_list)
-    current_permissions = frozenset(self.get_all_permissions())
-    return permission_set.issubset(current_permissions)
+    for permission in permission_list:
+      if not self.has_permission(permission):
+        return False
+    return True
 
   def member_of_group(self,group):
     """given a group return true if the identity is a member of it"""
     group = utils.verify_arg(group,Group)
-    binding_key_name = self.key().name() + '_' + group.key().name()
-    binding = MembershipBinding.get_by_key_name(binding_key_name)
-    if binding.active:
-      return True
+    cache_key = self.key().name()+'_memberof_'+group.key().name()
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
     else:
-      return False
+      binding_key_name = self.key().name() + '_' + group.key().name()
+      binding = MembershipBinding.get_by_key_name(binding_key_name)
+      if binding and binding.active:
+        utils.add_dependants(cache_key,[group])
+        memcache.set(cache_key,True)
+        return True
+      else:
+        return False
     
   def member_of_groups(self,groups_list):
     """return true if the current identity belongs to all of the specified groups"""
     for i,group in zip(range(len(groups_list)),groups_list):
-      permission_list[i] = utils.verify_arg(group,Group)
-    # TODO: should probably in its own method, get_all_groups
-    all_groups = [binding.group for binding in MembershipBinding.all().filter('identity',self).filter('active',True)]
-    return frozenset(groups_list).issubset(frozenset(all_groups))
+      groups_list[i] = utils.verify_arg(group,Group)
+    for group in groups_list:
+      if not self.member_of_group(group):
+        return False
+    return True
     
   def get_all_groups(self):
     """return a list of all groups this identity belongs to"""
-    return [binding.group for binding in MembershipBinding.all().filter('identity',self).filter('active',True)]
+    cache_key = self.key().name()+'_all_groups'
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
+    else:
+      groups = [binding.group for binding in MembershipBinding.all().filter('identity',self)]
+      utils.add_dependants(cache_key,groups)
+      memcache.set(cache_key,groups)
+      return groups
     
   def __hash__(self):
     """Return a hash for this model instance"""
@@ -163,18 +182,32 @@ class Identity (db.Expando):
     
   def __setattr__(self,name,value):
     """override setting the active value and update the membership bindings at the same time"""
-    if name == 'active':
-      if value != self.active:
-        db.Expando.__setattr__(self, name, value)
-        membership_bindings = []
-        for membership_binding in self.group_bindings:
-          membership_binding.active = value
-          membership_bindings.append(membership_binding)
-        db.put(membership_bindings)
-        # TODO: make sure this is mentioned in docs and remembered, could be a real performance bitch if people didnt know it was doing this
-        self.put()
-    else:
-      db.Expando.__setattr__(self, name, value)          
+    # TODO: when attributes change invalidate all the dependants 
+    # if self.is_saved(): utils.remove_dependants([self]) # this loops is_saved checks to see if theres an self._entity which uses __setattr__ etc
+    db.Expando.__setattr__(self, name, value)
+      
+  def _update_membership_bindings(self):
+    """if the active status of this model has changed then update its membership bindings"""
+    for membership_binding in self.group_bindings:
+      membership_binding.active = self.active
+      membership_binding.put()
+
+def pre_put_hook(service, call, request, response):
+  """before an identity is saved update its membership bindings"""
+  assert service == 'datastore_v3'
+  if call == 'Put':
+    for entity in request.entity_list():
+      model_instance = db.model_from_protobuf(entity)
+      if hasattr(model_instance,'_update_membership_bindings') and model_instance.is_saved():
+        model_instance._update_membership_bindings()
+        
+def post_put_hook(service, call, request, response):
+  """when any entity is saved assume that it has been modified (why else is it being saved?) and invalidate all of its dependant data"""
+  assert service == 'datastore_v3'
+  if call == 'Put': utils.remove_dependants([db.model_from_protobuf(entity) for entity in request.entity_list()])
+
+apiproxy_stub_map.apiproxy.GetPreCallHooks().Append('preput', pre_put_hook, 'datastore_v3')
+apiproxy_stub_map.apiproxy.GetPostCallHooks().Append('postput', post_put_hook, 'datastore_v3')
 
 class Group (db.Model):
   """
@@ -191,6 +224,7 @@ class Group (db.Model):
     """
     Override the model delete method to remove any members of this group before it is deleted.
     """
+    utils.remove_dependants([self])
     # Delete Permission Bindings
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
     # Delete Membership Bindings
@@ -201,18 +235,33 @@ class Group (db.Model):
     """
     Return a list of permissions this group has.
     """
-    # TODO: investigate more efficient ways of doing this
-    return db.get([permission_binding.permission_key() for permission_binding in self.permission_bindings])
+    cache_key = self.key().name()+'_all_permissions'
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
+    else:
+      permissions = [permission_binding.permission for permission_binding in self.permission_bindings]
+      utils.add_dependants(cache_key,permissions)
+      memcache.set(cache_key,permissions)
+      return permissions
 
   def has_permission(self,permission):
     """
     Return true if the group has the specified permission. 
     """
-    permission_binding_name = permission.key().name() + "_" + self.key().name()
-    if PermissionBinding.get_by_key_name(permission_binding_name):
-      return True
+    permission = utils.verify_arg(permission,Permission)
+    cache_key = self.key().name()+'_has_'+permission.key().name()
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
     else:
-      return False
+      permission_binding_name = permission.key().name() + "_" + self.key().name()
+      if PermissionBinding.get_by_key_name(permission_binding_name):
+        utils.add_dependants(cache_key,[permission])
+        memcache.set(cache_key,True)
+        return True
+      else:
+        return False
 
   def has_permissions(self,permission_list):
     """
@@ -222,27 +271,44 @@ class Group (db.Model):
       return False
     for i,permission in zip(range(len(permission_list)),permission_list):
       permission_list[i] = utils.verify_arg(permission,Permission)
-    current_permissions = frozenset(self.get_all_permissions())
-    return frozenset(permission_list).issubset(current_permissions)
+    for permission in permission_list:
+      if not self.has_permission(permission):
+        return False
+    return True
     
   def get_all_members(self,include_inactive=False):
     """Return a list of identities attached to this group.
     """
-    if include_inactive:
-      members = [binding.identity for binding in self.identity_bindings]
-    else:
-      members = [binding.identity for binding in MembershipBinding.all().filter('group',self).filter('active',True)]
-    return members
+    cache_key = self.key().name()+'_all_members_include_inactive:'+str(include_inactive)
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
+    else:      
+      if include_inactive:
+        members = [binding.identity for binding in self.identity_bindings]
+      else:
+        members = [binding.identity for binding in MembershipBinding.all().filter('group',self).filter('active',True)]
+      utils.add_dependants(cache_key,members)
+      memcache.set(cache_key,members)
+      return members
     
   def has_member(self,identity,include_inactive=False):
     """Return true if the given identity is part of this group"""
-    if include_inactive:
-      membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).get()
-      if membership_binding: return True
-    else:
-      membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).filter('active',True).get()
-      if membership_binding: return True
-    return False
+    cache_key = self.key().name()+'_has_member_'+identity.key().name()+'_include_inactive:'+str(include_inactive)
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
+    else:      
+      if include_inactive:
+        membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).get()
+      else:
+        membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).filter('active',True).get()
+      if membership_binding:
+        utils.add_dependants(cache_key,[identity])
+        memcache.set(cache_key,True)
+        return True
+      else:
+        return False
     
   def has_members(self,identity_list,include_inactive=False):
     """Return true if all of the given identities are part of this group"""
@@ -250,8 +316,10 @@ class Group (db.Model):
       return False
     for i,identity in zip(range(len(identity_list)),identity_list):
       identity_list[i] = utils.verify_arg(identity,Identity)
-    current_members = frozenset(self.get_all_members(include_inactive=include_inactive))
-    return frozenset(identity_list).issubset(current_members)
+    for identity in identity_list:
+      if not self.has_member(identity,include_inactive=include_inactive):
+        return False
+    return True
     
   def add_member(self, identity):
     """Add the given identity to this group"""
@@ -261,6 +329,7 @@ class Group (db.Model):
       raise exceptions.BindingExists('MembershipBinding already exists')
     else:
       key = MembershipBinding(key_name=membership_binding_name,group=self,identity=identity).put()
+      utils.remove_dependants([identity,self])
       return MembershipBinding.get(key)
       
   def remove_member(self, identity):
@@ -270,6 +339,7 @@ class Group (db.Model):
     binding = models.MembershipBinding.get_by_key_name(membership_binding_name)
     if binding:
       binding.delete()
+      utils.remove_dependants([identity,self])
       return True # found and deleted
     else:
       return None # not found
@@ -302,7 +372,12 @@ class Group (db.Model):
     """return a description for this instance"""
     return 'Group: ' + str(self.name)
           
-  
+  # def __setattr__(self,name,value):
+  #   """override setting the active value and update the membership bindings at the same time"""
+  #   # TODO: when attributes change invalidate all the dependants 
+  #   utils.remove_dependants([self])
+  #   super(Group, self).__setattr__(name,value)
+    
 class Permission (db.Model):
   """
   --Description--
@@ -317,16 +392,35 @@ class Permission (db.Model):
   def delete(self):
     """Override model delete method to remove all permission bindings when a permission is deleted."""
     # Delete all permission bindings
+    utils.remove_dependants([self])
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('permission',self)])
     super(Permission, self).delete()
     
-  def associated_with(self,subject):
-    subject = utils.verify_arg(subject,Identity,Group)
-    query = self.owner_bindings.filter('subject',subject)
-    if query.get():
-      return True
+  # def associated_with(self,subject):
+  #   subject = utils.verify_arg(subject,Identity,Group)
+  #   query = self.owner_bindings.filter('subject',subject)
+  #   if query.get():
+  #     return True
+  #   else:
+  #     return False
+      
+  def permission_holders(self):
+    """Return a list of all of the subjects that hold this permission (either directly or indirectly)"""
+    cache_key = self.key().name()+'_holders'
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      return cache_value
     else:
-      return False
+      subjects = [permission_binding.subject for permission_binding in self.owner_bindings]
+      expanded_subjects = []
+      for subject in subjects:
+        expanded_subjects.append(subject)
+        if isinstance(subject,Group):
+          expanded_subjects += subject.get_all_members()
+      expanded_subjects = list(set(expanded_subjects))
+      utils.add_dependants(cache_key,expanded_subjects)
+      memcache.set(cache_key,expanded_subjects)
+      return expanded_subjects
       
   def bind_to(self,subject):
     """Bind this permission to the given subject"""

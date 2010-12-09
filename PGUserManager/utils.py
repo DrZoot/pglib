@@ -29,12 +29,13 @@ def add_dependants(key,dependants):
       cache_value = set([key])
     memcache.set(cache_key,cache_value)
   
-def remove_dependants(subject):
+def remove_dependants(subjects):
   """Remove the associated data from dependant keys"""
-  cache_key = str(subject.key())+'_dependants'
-  cache_value = memcache.get(cache_key)
-  if cache_value:
-    for dependant_key in cache_value:
-      memcache.delete(dependant_key)
+  for subject in subjects:
+    cache_key = str(subject.key())+'_dependants'
+    cache_value = memcache.get(cache_key)
+    if cache_value:
+      for dependant_key in cache_value:
+        memcache.delete(dependant_key)
       
       

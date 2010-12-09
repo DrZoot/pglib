@@ -17,6 +17,11 @@ If you are interested in working on any of these, email p.gower@gmail.com
   - implement some way to hook into the existing authentication mechanism and create new identities for new users
   - do we play nice with openid?
   - check to make sure the email attribute passed to identity actually looks like an email address
+  - when changing attributes on an identity get setattr to invalidate all dependent cache data
+  - re-evaluate add_dependent and remove_dependent
+  - would hashing all of the input args give better keys?
+  - what happens when someone makes changes to the user data via the admin console (googles not mine)?
+  - revist the membership_binding pre call hooks, their not efficient
 
   
 * Completed

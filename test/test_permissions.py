@@ -63,11 +63,11 @@ class InstanceMethodTesting(unittest.TestCase):
     permissions[0].bind_to(groups[0])
     permissions[1].bind_to(identities[0])
       
-  def test_AssociatedWith(self):
-    # return true when passed subjects that are associated
-    g = group.get_group('Group1')
-    i = identity.get_identity('user1@example.org')
-    p_g = permission.get_permission('Permission1')
-    p_i = permission.get_permission('Permission2')
-    self.assert_(p_g.associated_with(g), 'Should return true if bound')
-    self.assert_(p_i.associated_with(i), 'Should return true if bound')
+  # def test_AssociatedWith(self):
+  #   # return true when passed subjects that are associated
+  #   g = group.get_group('Group1')
+  #   i = identity.get_identity('user1@example.org')
+  #   p_g = permission.get_permission('Permission1')
+  #   p_i = permission.get_permission('Permission2')
+  #   self.assert_(p_g.associated_with(g), 'Should return true if bound')
+  #   self.assert_(p_i.associated_with(i), 'Should return true if bound')
