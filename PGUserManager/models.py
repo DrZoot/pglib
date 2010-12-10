@@ -47,12 +47,11 @@ class Identity (db.Expando):
       return cache_val
     else:
       groups = self.get_all_groups()
-      utils.add_dependants(cache_key,groups)
       permissions = []
       for g in groups:
         permissions = permissions + g.get_all_permissions()
       deduped_permissions = list(frozenset(permissions))
-      utils.add_dependants(cache_key,deduped_permissions)
+      utils.add_dependants(cache_key,groups + deduped_permissions + [self])
       memcache.set(cache_key,deduped_permissions)
       return deduped_permissions
     
@@ -66,12 +65,10 @@ class Identity (db.Expando):
       return cache_val
     else:
       groups = self.get_all_groups()
-      utils.add_dependants(cache_key,groups)
       group_permissions = self.get_group_permissions()
-      utils.add_dependants(cache_key,group_permissions)
       direct_permissions = [binding.permission for binding in self.permission_bindings]
-      utils.add_dependants(cache_key,direct_permissions)
       deduped_permissions = list(frozenset(group_permissions + direct_permissions))
+      utils.add_dependants(cache_key,groups + deduped_permissions + [self])
       memcache.set(cache_key,deduped_permissions)
       return deduped_permissions
     
@@ -85,14 +82,14 @@ class Identity (db.Expando):
     else:      
       binding_key_name = permission.key().name() + '_' + self.key().name()
       if PermissionBinding.get_by_key_name(binding_key_name):
-        utils.add_dependants(cache_key,[permission])
+        utils.add_dependants(cache_key,[permission,self])
         memcache.set(cache_key,True)
         return True
       else:
         groups = db.get([mb.group_key() for mb in self.group_bindings])
         for group in groups:
           if group.has_permission(permission):
-            utils.add_dependants(cache_key,[group,permission])
+            utils.add_dependants(cache_key,[group,permission,self])
             memcache.set(cache_key,True)
             return True
       # dont memcache here because im not sure how you would ever get this data out, it would have no dependents
@@ -123,7 +120,7 @@ class Identity (db.Expando):
       binding_key_name = self.key().name() + '_' + group.key().name()
       binding = MembershipBinding.get_by_key_name(binding_key_name)
       if binding and binding.active:
-        utils.add_dependants(cache_key,[group])
+        utils.add_dependants(cache_key,[group,self])
         memcache.set(cache_key,True)
         return True
       else:
@@ -146,7 +143,7 @@ class Identity (db.Expando):
       return cache_value
     else:
       groups = [binding.group for binding in MembershipBinding.all().filter('identity',self)]
-      utils.add_dependants(cache_key,groups)
+      utils.add_dependants(cache_key,groups + [self])
       memcache.set(cache_key,groups)
       return groups
     
@@ -173,41 +170,17 @@ class Identity (db.Expando):
       
   def __repr__(self):
     """return a python representation of the model"""
-    # TODO: rewrite this to deal with dynamic properties
     return 'Identity(key_name='+str(self.key().name())+' email='+str(self.email)+' active='+str(self.active)+')'
     
   def __str__(self):
     """return a string descripton for this instance"""
     return 'Identity: ' + str(self.email)
     
-  def __setattr__(self,name,value):
-    """override setting the active value and update the membership bindings at the same time"""
-    # TODO: when attributes change invalidate all the dependants 
-    # if self.is_saved(): utils.remove_dependants([self]) # this loops is_saved checks to see if theres an self._entity which uses __setattr__ etc
-    db.Expando.__setattr__(self, name, value)
-      
   def _update_membership_bindings(self):
     """if the active status of this model has changed then update its membership bindings"""
     for membership_binding in self.group_bindings:
       membership_binding.active = self.active
       membership_binding.put()
-
-def pre_put_hook(service, call, request, response):
-  """before an identity is saved update its membership bindings"""
-  assert service == 'datastore_v3'
-  if call == 'Put':
-    for entity in request.entity_list():
-      model_instance = db.model_from_protobuf(entity)
-      if hasattr(model_instance,'_update_membership_bindings') and model_instance.is_saved():
-        model_instance._update_membership_bindings()
-        
-def post_put_hook(service, call, request, response):
-  """when any entity is saved assume that it has been modified (why else is it being saved?) and invalidate all of its dependant data"""
-  assert service == 'datastore_v3'
-  if call == 'Put': utils.remove_dependants([db.model_from_protobuf(entity) for entity in request.entity_list()])
-
-apiproxy_stub_map.apiproxy.GetPreCallHooks().Append('preput', pre_put_hook, 'datastore_v3')
-apiproxy_stub_map.apiproxy.GetPostCallHooks().Append('postput', post_put_hook, 'datastore_v3')
 
 class Group (db.Model):
   """
@@ -241,7 +214,7 @@ class Group (db.Model):
       return cache_value
     else:
       permissions = [permission_binding.permission for permission_binding in self.permission_bindings]
-      utils.add_dependants(cache_key,permissions)
+      utils.add_dependants(cache_key,permissions + [self])
       memcache.set(cache_key,permissions)
       return permissions
 
@@ -257,7 +230,7 @@ class Group (db.Model):
     else:
       permission_binding_name = permission.key().name() + "_" + self.key().name()
       if PermissionBinding.get_by_key_name(permission_binding_name):
-        utils.add_dependants(cache_key,[permission])
+        utils.add_dependants(cache_key,[permission,self])
         memcache.set(cache_key,True)
         return True
       else:
@@ -288,7 +261,7 @@ class Group (db.Model):
         members = [binding.identity for binding in self.identity_bindings]
       else:
         members = [binding.identity for binding in MembershipBinding.all().filter('group',self).filter('active',True)]
-      utils.add_dependants(cache_key,members)
+      utils.add_dependants(cache_key,members + [self])
       memcache.set(cache_key,members)
       return members
     
@@ -304,7 +277,7 @@ class Group (db.Model):
       else:
         membership_binding = MembershipBinding.all(keys_only=True).filter('group',self).filter('identity',identity).filter('active',True).get()
       if membership_binding:
-        utils.add_dependants(cache_key,[identity])
+        utils.add_dependants(cache_key,[identity,self])
         memcache.set(cache_key,True)
         return True
       else:
@@ -418,7 +391,7 @@ class Permission (db.Model):
         if isinstance(subject,Group):
           expanded_subjects += subject.get_all_members()
       expanded_subjects = list(set(expanded_subjects))
-      utils.add_dependants(cache_key,expanded_subjects)
+      utils.add_dependants(cache_key,expanded_subjects + [self])
       memcache.set(cache_key,expanded_subjects)
       return expanded_subjects
       
@@ -430,6 +403,7 @@ class Permission (db.Model):
       raise exceptions.BindingExists("PermissionBinding already exists")
     else:
       key = PermissionBinding(key_name=permission_binding_name,permission=self,subject=subject).put()
+      utils.remove_dependants([self,subject])
       return PermissionBinding.get(key)
       
   def unbind_from(self,subject):
@@ -439,6 +413,7 @@ class Permission (db.Model):
     binding = PermissionBinding.get_by_key_name(permission_binding_name)
     if binding:
       binding.delete()
+      utils.remove_dependants([self,subject])
       return True # found and deleted
     else:
       return None # not found
@@ -542,3 +517,21 @@ class MembershipBinding (BindingModel):
   def __str__(self):
     """return a description for this model instance"""
     return 'MembershipBinding: '+str(self.key().name()).replace('_',' <=> ')
+    
+def pre_put_hook(service, call, request, response):
+  """before an identity is saved update its membership bindings"""
+  assert service == 'datastore_v3'
+  if call == 'Put':
+    for entity in request.entity_list():
+      model_instance = db.model_from_protobuf(entity)
+      if hasattr(model_instance,'_update_membership_bindings') and model_instance.is_saved():
+        model_instance._update_membership_bindings()
+
+def post_put_hook(service, call, request, response):
+  """when any entity is saved assume that it has been modified (why else is it being saved?) and invalidate all of its dependant data"""
+  assert service == 'datastore_v3'
+  if call == 'Put': 
+    utils.remove_dependants([db.model_from_protobuf(entity) for entity in request.entity_list()])
+
+apiproxy_stub_map.apiproxy.GetPreCallHooks().Append('preput', pre_put_hook, 'datastore_v3')
+apiproxy_stub_map.apiproxy.GetPostCallHooks().Append('postput', post_put_hook, 'datastore_v3')

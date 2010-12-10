@@ -8,6 +8,7 @@ Miscellaneous functions to help with various actions.
 """
 from google.appengine.ext import db
 from google.appengine.api import memcache
+import logging
 
 def verify_arg(arg,*args):
   """given an input argument and a list of models make sure that the input is one of the model types"""
@@ -29,10 +30,10 @@ def add_dependants(key,dependants):
       cache_value = set([key])
     memcache.set(cache_key,cache_value)
   
-def remove_dependants(subjects):
+def remove_dependants(dependants):
   """Remove the associated data from dependant keys"""
-  for subject in subjects:
-    cache_key = str(subject.key())+'_dependants'
+  for dependant in dependants:
+    cache_key = str(dependant.key())+'_dependants'
     cache_value = memcache.get(cache_key)
     if cache_value:
       for dependant_key in cache_value:
