@@ -5,9 +5,11 @@ from PGUserManager import permission
 from PGUserManager import exceptions
 from PGUserManager import models
 from google.appengine.ext import db
+from google.appengine.api import memcache
 
 class FunctionTesting(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     i = identity.create_identity('user1@example.org')
     g = group.create_group('Group1')
     permissions = [permission.create_permission(p) for p in ['Permission1','Permission2','Permission3']]
@@ -57,6 +59,7 @@ class FunctionTesting(unittest.TestCase):
     
 class InstanceMethodTesting(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     groups = [group.create_group(g) for g in ['Group1','Group2']]
     identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org']]
     permissions = [permission.create_permission(p) for p in ['Permission1','Permission2']]

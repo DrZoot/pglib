@@ -5,9 +5,12 @@ from PGUserManager import permission
 from PGUserManager import exceptions
 from PGUserManager import models
 from google.appengine.ext import db
+from google.appengine.api import memcache
 import logging
 
 class FunctionTesting(unittest.TestCase):
+  def setUp(self):
+    memcache.flush_all()
   
   def test_CreateIdentity(self):
     # creating an identity should return an identity object with the given email
@@ -92,6 +95,7 @@ class FunctionTesting(unittest.TestCase):
 class InstanceMethodTesting(unittest.TestCase):
   
   def setUp(self):
+    memcache.flush_all()
     identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org']]
     groups = [group.create_group(g) for g in ['Group1','Group2']]
     groups[0].add_member(identities[0])
@@ -135,6 +139,7 @@ class InstanceMethodTesting(unittest.TestCase):
 class IdentityHasPermissions(unittest.TestCase):
   
   def setUp(self):
+    memcache.flush_all()
     identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org']]
     groups = [group.create_group(g) for g in ['Group1','Group2']]
     groups[0].add_member(identities[0])
@@ -173,6 +178,9 @@ class IdentityHasPermissions(unittest.TestCase):
     self.assertRaises(TypeError, invalid_args)
     
 class ActiveIdentity(unittest.TestCase):
+  def setUp(self):
+    memcache.flush_all()
+    
   def test_RetrieveInactiveIdentity(self):
     # Retrieving an inactive identity should return false
     i = identity.create_identity('user1@example.org',active=False)

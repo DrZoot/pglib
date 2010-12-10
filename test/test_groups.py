@@ -5,10 +5,12 @@ from PGUserManager import permission
 from PGUserManager import exceptions
 from PGUserManager import models
 from google.appengine.ext import db
+from google.appengine.api import memcache
 import logging
 
 class FunctionTesting(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     for i in range(10):
       identity.create_identity('user' + str(i) + '@example.org')
 
@@ -71,6 +73,7 @@ class FunctionTesting(unittest.TestCase):
     
 class InstanceMethodTesting(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org']]
     groups = [group.create_group(g) for g in ['Group1','Group2']]
     group_permissions = [permission.create_permission(p) for p in ['GroupPermission1','GroupPermission2']]
@@ -110,6 +113,7 @@ class InstanceMethodTesting(unittest.TestCase):
       
 class GroupHasMembers(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org']]
     groups = [group.create_group(g) for g in ['Group1','Group2']]
     groups[0].add_member(identities[0])
@@ -134,6 +138,7 @@ class GroupHasMembers(unittest.TestCase):
     
 class GroupHasPermissions(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     groups = [group.create_group(g) for g in ['Group1','Group2']]
     valid_permissions = [permission.create_permission(p) for p in ['ValidPermission1','ValidPermission2']]
     invalid_permissions = [permission.create_permission(p) for p in ['InvalidPermission1','InvalidPermission2']]
@@ -159,6 +164,7 @@ class GroupHasPermissions(unittest.TestCase):
     
 class GroupWithInactiveMembers(unittest.TestCase):
   def setUp(self):
+    memcache.flush_all()
     g = group.create_group('Group1')
     identities = [identity.create_identity(i) for i in ['user1@example.org','user2@example.org','user3@example.org','user4@example.org']]
     for i in identities:
