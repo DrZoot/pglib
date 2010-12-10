@@ -293,6 +293,9 @@ def _run_test_suite(runner, suite):
        # Allow the other services to be used as-is for tests.
        for name in ['user', 'urlfetch', 'mail', 'memcache', 'images']: 
            apiproxy_stub_map.apiproxy.RegisterStub(name, original_apiproxy.GetStub(name))
+       # Attempt to copy hooks from the original_apiproxy to the new apiproxy
+       apiproxy_stub_map.apiproxy._APIProxyStubMap__precall_hooks = original_apiproxy._APIProxyStubMap__precall_hooks
+       apiproxy_stub_map.apiproxy._APIProxyStubMap__postcall_hooks = original_apiproxy._APIProxyStubMap__postcall_hooks
        runner.run(suite)
     finally:
        apiproxy_stub_map.apiproxy = original_apiproxy
