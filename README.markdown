@@ -6,11 +6,10 @@ Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
 
 ## TODO
 * General
-  * Figure out how to do read only properties, there are whole bunches of stuff that i dont want people to be able to change ever
-  * use the results of the below tests to optimize all read operations
+  * Work out which model properties should be read-only and enforce that by overriding the `__setattr__` method
   * make sure all models have methods to retrieve all of their dependants
-  * memcache stuff
-  * setup some sort of profiling
+  * finish adding memcache to functions and revist the key generation method (hashing?)
+  * setup some sort of automated performance profiling similar to gaeunit
   * add logging to everything
   * implement some way to hook into the existing authentication mechanism and create new identities for new users
   * do we play nice with openid?

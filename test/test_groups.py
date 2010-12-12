@@ -201,8 +201,6 @@ class GroupWithInactiveMembers(unittest.TestCase):
     self.assert_(g.has_members(identities[1:]))
     self.assert_(g.has_members(identities,include_inactive=True), 'has_members should return true if all passed identites are bound regardless of active status')
     
-    
-    
       
     
       

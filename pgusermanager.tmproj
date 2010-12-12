@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>PGUserManager/__init__.py</string>
+	<string>test/test_groups.py</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -15,12 +15,6 @@
 			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
 			<key>sourceDirectory</key>
 			<string>PGUserManager</string>
-		</dict>
-		<dict>
-			<key>filename</key>
-			<string>TODO</string>
-			<key>lastUsed</key>
-			<date>2010-12-12T07:39:19Z</date>
 		</dict>
 		<dict>
 			<key>expanded</key>
@@ -36,61 +30,83 @@
 			<key>filename</key>
 			<string>gaeunit.py</string>
 			<key>lastUsed</key>
-			<date>2010-12-12T07:39:12Z</date>
+			<date>2010-12-12T09:32:54Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>README.markdown</string>
+			<key>lastUsed</key>
+			<date>2010-12-12T11:31:14Z</date>
+		</dict>
+		<dict>
+			<key>filename</key>
+			<string>app.yaml</string>
+			<key>lastUsed</key>
+			<date>2010-12-12T09:32:53Z</date>
+		</dict>
+		<dict>
+			<key>expanded</key>
+			<true/>
+			<key>name</key>
+			<string>PGUserManagerUI</string>
+			<key>regexFolderFilter</key>
+			<string>!.*/(\.[^/]*|CVS|_darcs|_MTN|\{arch\}|blib|.*~\.nib|.*\.(framework|app|pbproj|pbxproj|xcode(proj)?|bundle))$</string>
+			<key>sourceDirectory</key>
+			<string>PGUserManagerUI</string>
 		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
 	<integer>272</integer>
 	<key>metaData</key>
 	<dict>
-		<key>PGUserManager/__init__.py</key>
+		<key>PGUserManager/COPYING</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>40</integer>
 				<key>line</key>
-				<integer>0</integer>
+				<integer>618</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>TODO</key>
+		<key>README.markdown</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>73</integer>
 				<key>line</key>
-				<integer>0</integer>
+				<integer>11</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
 		</dict>
-		<key>gaeunit.py</key>
+		<key>test/test_groups.py</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>161</integer>
 				<key>line</key>
-				<integer>0</integer>
+				<integer>201</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>158</integer>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
 	<array>
-		<string>gaeunit.py</string>
-		<string>TODO</string>
-		<string>PGUserManager/__init__.py</string>
+		<string>PGUserManager/COPYING</string>
+		<string>README.markdown</string>
+		<string>test/test_groups.py</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
