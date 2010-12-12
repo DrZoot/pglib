@@ -2,7 +2,7 @@
 ## Description
 PGUserManager is a library for Google App Engine that provides management for Users,Groups and Permissions. It is loosely based on the django.contrib.auth module. 
 PGUserManager does not involve itself with the actual authentication process of App Engine, it merely allows you to create groups and permissions and bind users to them.
-This is the first project I have released under an open source license. Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
+Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
 
 ## TODO
 * General
