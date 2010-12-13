@@ -189,6 +189,11 @@ class Identity (db.Expando):
     """Return a string description of this Identity"""
     return 'Identity: ' + str(self.email)
     
+  def __setattr__(self,name,value):
+    """Identity Model __setattr__. Ensure that email is not changed once an Identity is created."""
+    if name == 'email': raise exceptions.ReadOnlyPropertyError('The email of an identity cannot be changed after it is created.')
+    super(Identity, self).__setattr__(name,value)
+        
   def _update_membership_bindings(self):
     """If the active status for this binding has changed then update all of its membership bindings to reflect its new status"""
     for membership_binding in self.group_bindings:
@@ -357,6 +362,11 @@ class Group (db.Model):
   def __str__(self):
     """return a description for this instance"""
     return 'Group: ' + str(self.name)
+    
+  def __setattr__(self,name,value):
+    """Group model __setattr__. Ensure that name is not changed on Group instances."""
+    if name == 'name': raise exceptions.ReadOnlyPropertyError('The name of a group cannot be changed after it is created.')
+    super(Group, self).__setattr__(name,value)
           
 class Permission (db.Model):
   """
@@ -376,14 +386,6 @@ class Permission (db.Model):
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('permission',self)])
     super(Permission, self).delete()
     
-  # def associated_with(self,subject):
-  #   subject = utils.verify_arg(subject,Identity,Group)
-  #   query = self.owner_bindings.filter('subject',subject)
-  #   if query.get():
-  #     return True
-  #   else:
-  #     return False
-      
   def permission_holders(self):
     """Return a list of all of the subjects that hold this permission (either directly or indirectly)"""
     cache_key = self.key().name()+'_holders'
@@ -452,6 +454,11 @@ class Permission (db.Model):
   def __str__(self):
     """return a description for this permission"""
     return 'Permission: ' + str(self.name)
+    
+  def __setattr__(self,name,value):
+    """Permission model __setattr__. Ensure that a permissions name is not changed."""
+    if name == 'name': raise exceptions.ReadOnlyPropertyError('The name of a permission cannot be changed after it is created.')
+    super(Permission,self).__setattr__(name,value)
       
 class BindingModel(db.Model):
   """Base class to represent bindings between objects"""
@@ -493,7 +500,7 @@ class PermissionBinding (BindingModel):
     
   def __repr__(self):
     """returns a representation for this model"""
-    return 'PermissionBinding(key_name='+str(self.key().name())+' permission='+str(self.permission_key())+' subject='+str(self.subject_key())+')'
+    return 'PermissionBinding(key_name='+str(self.key().name())+', permission='+str(self.permission_key())+', subject='+str(self.subject_key())+')'
     
   def __str__(self):
     """return a description for this model"""
@@ -519,7 +526,7 @@ class MembershipBinding (BindingModel):
     
   def __repr__(self):
     """return a representation for this model"""
-    return 'MembershipBinding(key_name='+str(self.key().name())+' identity='+str(self.identity_key())+' group='+str(self.group_key())+')'
+    return 'MembershipBinding(key_name='+str(self.key().name())+', identity='+str(self.identity_key())+', group='+str(self.group_key())+')'
     
   def __str__(self):
     """return a description for this model instance"""
