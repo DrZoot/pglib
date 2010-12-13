@@ -7,22 +7,23 @@ Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
 ## TODO
 * General
   * Work out which model properties should be read-only and enforce that by overriding the `__setattr__` method
-  * make sure all models have methods to retrieve all of their dependants
   * finish adding memcache to functions and revist the key generation method (hashing?)
   * setup some sort of automated performance profiling similar to gaeunit
   * add logging to everything
   * implement some way to hook into the existing authentication mechanism and create new identities for new users
   * do we play nice with openid?
   * check to make sure the email attribute passed to identity actually looks like an email address
-  * when changing attributes on an identity get setattr to invalidate all dependent cache data
   * re-evaluate `add_dependent` and `remove_dependent`
   * would hashing all of the input args give better keys?
   * what happens when someone makes changes to the user data via the admin console (googles not mine)?
   * revist the membership_binding pre call hooks, theyre not efficient
-  * rewrite identity `__repr__` to deal with dynamic properties
   * hook into delete calls and make sure remove_dependants is called in that circumstance too
+  * ensure that the hooks only get called when the objects in question is part of PGUserManager
   
 * Completed
+  * DONE - when changing attributes on an identity get setattr to invalidate all dependent cache data (accomplished with the API hooks)
+  * DONE - rewrite identity `__repr__` to deal with dynamic properties
+  * DONE - make sure all models have methods to retrieve all of their dependants
   * DONE - add tests to make sure inactive identities are not returned in group operations
   * DONE - make all methods obey active status, except xx_query
   * DONE - Modify tests to be a bit more efficient

@@ -54,7 +54,6 @@ class Identity (db.Expando):
     
   def get_group_permissions(self):
     """Return a list of permissions which this identity has through its group memberships."""
-    # TODO: compare this with using the Group.get_all_permissions method on each group and list(set([])) the result
     cache_key = self.key().name()+'_group_permissions'
     cache_val = memcache.get(cache_key)
     if cache_val:
@@ -70,9 +69,7 @@ class Identity (db.Expando):
       return deduped_permissions
     
   def get_all_permissions(self):
-    """
-    Return a list of permissions this user has both through group and user permissions.
-    """
+    """Return a list of permissions this user has both through group and user permissions."""
     cache_key = self.key().name()+'_all_permissions'
     cache_val = memcache.get(cache_key)
     if cache_val:
@@ -111,9 +108,7 @@ class Identity (db.Expando):
       return False
     
   def has_permissions(self,permission_list):
-    """
-    Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_permission.
-    """
+    """Returns true if the user has all of the specified permissions. Permissions in the list can be specified as per has_permission."""
     if permission_list == []:
       return False
     for i,permission in zip(range(len(permission_list)),permission_list):
@@ -124,7 +119,7 @@ class Identity (db.Expando):
     return True
 
   def member_of_group(self,group):
-    """given a group return true if the identity is a member of it"""
+    """Given a group return true if the identity is a member of it"""
     group = utils.verify_arg(group,Group)
     cache_key = self.key().name()+'_memberof_'+group.key().name()
     cache_value = memcache.get(cache_key)
@@ -183,15 +178,19 @@ class Identity (db.Expando):
       return False
       
   def __repr__(self):
-    """return a python representation of the model"""
-    return 'Identity(key_name='+str(self.key().name())+' email='+str(self.email)+' active='+str(self.active)+')'
+    """Return a python representation of this Identity"""
+    dynamic_property_reprs = [name + '=' + repr(getattr(self,name)) for name in self.dynamic_properties]
+    dynamic_property_reprs_string = ''
+    for dynamic_property_repr in dynamic_property_reprs:
+      dynamic_property_reprs_string += ', ' + dynamic_property_repr
+    return 'Identity(key_name='+str(self.key().name())+', email='+str(self.email)+', active='+str(self.active)+ dynamic_property_reprs_string+')'
     
   def __str__(self):
-    """return a string descripton for this instance"""
+    """Return a string description of this Identity"""
     return 'Identity: ' + str(self.email)
     
   def _update_membership_bindings(self):
-    """if the active status of this model has changed then update its membership bindings"""
+    """If the active status for this binding has changed then update all of its membership bindings to reflect its new status"""
     for membership_binding in self.group_bindings:
       membership_binding.active = self.active
       membership_binding.put()
@@ -353,18 +352,12 @@ class Group (db.Model):
       
   def __repr__(self):
     """return a string representation for this instance"""
-    return 'Group(key_name='+str(self.key().name())+' name='+str(self.name)+' description='+str(self.description)+')'
+    return 'Group(key_name='+str(self.key().name())+', name='+str(self.name)+', description='+str(self.description)+')'
     
   def __str__(self):
     """return a description for this instance"""
     return 'Group: ' + str(self.name)
           
-  # def __setattr__(self,name,value):
-  #   """override setting the active value and update the membership bindings at the same time"""
-  #   # TODO: when attributes change invalidate all the dependants 
-  #   utils.remove_dependants([self])
-  #   super(Group, self).__setattr__(name,value)
-    
 class Permission (db.Model):
   """
   --Description--
@@ -454,7 +447,7 @@ class Permission (db.Model):
       
   def __repr__(self):
     """return a rerpresentation for this model"""
-    return 'Permission(key_name='+str(self.key().name())+' name='+str(self.name)+' description='+str(self.description)+')'
+    return 'Permission(key_name='+str(self.key().name())+', name='+str(self.name)+', description='+str(self.description)+')'
     
   def __str__(self):
     """return a description for this permission"""
@@ -533,7 +526,7 @@ class MembershipBinding (BindingModel):
     return 'MembershipBinding: '+str(self.key().name()).replace('_',' <=> ')
     
 def pre_put_hook(service, call, request, response):
-  """before an identity is saved update its membership bindings"""
+  """If an Identity is being saved update its Membership Bindings"""
   assert service == 'datastore_v3'
   if call == 'Put':
     for entity in request.entity_list():
@@ -542,7 +535,7 @@ def pre_put_hook(service, call, request, response):
         model_instance._update_membership_bindings()
 
 def post_put_hook(service, call, request, response):
-  """when any entity is saved assume that it has been modified (why else is it being saved?) and invalidate all of its dependant data"""
+  """When an Entity is being saved to the Datastore invalidate all of its memcache dependants"""
   assert service == 'datastore_v3'
   if call == 'Put': 
     utils.remove_dependants([db.model_from_protobuf(entity) for entity in request.entity_list()])
