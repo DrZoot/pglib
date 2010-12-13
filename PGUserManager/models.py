@@ -44,11 +44,8 @@ class Identity (db.Expando):
     
   def delete(self):
     """Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete."""
-    # Delete dependent memcache keys
     utils.remove_dependants([self])
-    # Delete Permission Bindings
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
-    # Delete Group Bindings
     db.delete([key for key in MembershipBinding.all(keys_only=True).filter('identity',self)])
     super(Identity, self).delete()
     
@@ -179,7 +176,7 @@ class Identity (db.Expando):
       
   def __repr__(self):
     """Return a python representation of this Identity"""
-    dynamic_property_reprs = [name + '=' + repr(getattr(self,name)) for name in self.dynamic_properties]
+    dynamic_property_reprs = [name + '=' + repr(getattr(self,name)) for name in self.dynamic_properties()]
     dynamic_property_reprs_string = ''
     for dynamic_property_repr in dynamic_property_reprs:
       dynamic_property_reprs_string += ', ' + dynamic_property_repr
@@ -216,9 +213,7 @@ class Group (db.Model):
     Override the model delete method to remove any members of this group before it is deleted.
     """
     utils.remove_dependants([self])
-    # Delete Permission Bindings
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('subject',self)])
-    # Delete Membership Bindings
     db.delete([key for key in MembershipBinding.all(keys_only=True).filter('group',self)])
     super(Group, self).delete()
     
@@ -381,7 +376,6 @@ class Permission (db.Model):
   
   def delete(self):
     """Override model delete method to remove all permission bindings when a permission is deleted."""
-    # Delete all permission bindings
     utils.remove_dependants([self])
     db.delete([key for key in PermissionBinding.all(keys_only=True).filter('permission',self)])
     super(Permission, self).delete()
