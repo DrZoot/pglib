@@ -53,5 +53,6 @@ def remove_dependants(dependants):
     if cache_value:
       for dependant_key in cache_value:
         memcache.delete(dependant_key)
+    memcache.delete(cache_key)
       
       
