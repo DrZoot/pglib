@@ -32,7 +32,7 @@ def verify_arg(arg,*args):
   if isinstance(arg,tuple(args)):
     return arg
   else:
-    raise TypeError('arg must be one of:' + repr(*args))
+    raise TypeError('arg must be one of:' + str([str(type(arg)) for arg in args]))
     
 def add_dependants(key,dependants):
   """Update the memcache dependency sets of the given objects"""
