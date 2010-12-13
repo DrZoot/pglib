@@ -33,3 +33,7 @@ class DuplicateValue(Exception):
 class BindingExists(Exception):
   """Raised when trying to create a binding that already exists"""
   pass
+  
+class ReadOnlyPropertyError(Exception):
+  """Raised when trying to set a value on a read only model property"""
+  pass
