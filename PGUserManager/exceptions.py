@@ -37,3 +37,8 @@ class BindingExists(Exception):
 class ReadOnlyPropertyError(Exception):
   """Raised when trying to set a value on a read only model property"""
   pass
+  
+class InvalidAddressFormat(Exception):
+  """Raised when Identity is passed an email address with an invalid format"""
+  pass
+    

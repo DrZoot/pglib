@@ -34,20 +34,21 @@ def create_identity(email_address,active=True,**kwargs):
     raise exceptions.DuplicateValue(email_address)
   else:
     key = models.Identity(key_name=key_name,email=email_address,active=active,**kwargs).put()
-    value = models.Identity.get(key)
+    i = models.Identity.get(key)
     cache_key = email_address + '_identity'
-    utils.add_dependants(cache_key,[value])
-    memcache.set(cache_key,value)
-    return value
+    utils.add_dependants(cache_key,[i])
+    memcache.set(cache_key,i)
+    return i
 
 def get_identity(email_address,include_inactive=False):
   """Given an email address try to return a datastore object for it using the email_address as a key_name"""
-  # TODO: this is broken, when an identity is changed its memcache is cleared, but when include_inactive is changed memcache is not touched but identities are pushed into it by this function.
-  # this is a difficult problem, if i add the identities active status to the memcache key name then i will have to search for two keys, maybe the only way though.
   cache_key = email_address + '_identity'
   cache_value = memcache.get(cache_key)
   if cache_value: 
-    return cache_value
+    if cache_value.active or (not cache_value.active and include_inactive):
+      return cache_value
+    else:
+      return None
   else:
     i = models.Identity.get_by_key_name(email_address.lower())
     if i:

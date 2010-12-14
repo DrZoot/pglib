@@ -24,6 +24,9 @@ Miscellaneous functions to help with various actions.
 from google.appengine.ext import db
 from google.appengine.api import memcache
 import logging
+import re
+import exceptions
+
 
 def verify_arg(arg,*args):
   """given an input argument and a list of models make sure that the input is one of the model types"""
@@ -54,5 +57,14 @@ def remove_dependants(dependants):
       for dependant_key in cache_value:
         memcache.delete(dependant_key)
     memcache.delete(cache_key)
-      
+    
+def validate_email_address(address):
+  """Ensure that the given email address is syntactically valid"""
+  # Regex is ripped from django.core.validators
+  email_re = re.compile(
+  r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
+  r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
+  r')@(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$', re.IGNORECASE)  # domain
+  if not email_re.match(unicode(address)):
+    raise exceptions.InvalidAddressFormat(address + ' is invalid')
       

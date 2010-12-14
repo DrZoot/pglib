@@ -39,9 +39,9 @@ class Identity (db.Expando):
   """
   # user = db.UserProperty()
   # TODO: email should be read only after the object is created as there is no good way to make sure it is unique on subsequent puts
-  email = db.StringProperty(required=True)
+  email = db.StringProperty(required=True,validator=utils.validate_email_address)
   active = db.BooleanProperty(default=True)
-    
+  
   def delete(self):
     """Overrides the model delete method to include any membership bindings or permission bindings that reference this identity in the delete."""
     utils.remove_dependants([self])

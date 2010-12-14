@@ -33,11 +33,11 @@ def create_group(name,description=None):
     raise exceptions.DuplicateValue(name)
   else:
     key = models.Group(key_name=key_name,name=name,description=description).put()
-    value = models.Group.get(key)
+    g = models.Group.get(key)
     cache_key = name + '_group'
-    utils.add_dependants(cache_key,[value])
-    memcache.set(cache_key,value)
-    return value
+    utils.add_dependants(cache_key,[g])
+    memcache.set(cache_key,g)
+    return g
   
 def get_group(name):
   """return the group with the given name or none"""

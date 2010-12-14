@@ -24,6 +24,7 @@ Functions for manipulating Permissions
 import models
 import exceptions
 import utils
+from google.appengine.api import memcache
 
 def create_permission(name,description=None):
   """Create a new permission or raise a DuplicateValue exception if a permission already exists with that name"""
@@ -32,23 +33,30 @@ def create_permission(name,description=None):
     raise exceptions.DuplicateValue(name)
   else:
     key = models.Permission(key_name=key_name,name=name,description=description).put()
-    return models.Permission.get(key)
+    p = models.Permission.get(key)
+    cache_key = name + '_permission'
+    utils.add_dependants(cache_key,[p])
+    memcache.set(cache_key,p)
+    return p
     
 def get_permission(name):
   """Return the given permission or none"""
-  return models.Permission.get_by_key_name(name.lower())
-  
+  cache_key = name + '_permission'
+  cache_value = memcache.get(cache_key)
+  if cache_value:
+    return cache_value
+  else:
+    p = models.Permission.get_by_key_name(name.lower())
+    if p:
+      utils.add_dependants(cache_key,[p])
+      memcache.set(cache_key,p)
+      return p
+    else:
+      return None
+      
 def permission_query(*args,**kwargs):
   """Return a query for permissions"""
   return models.Permission.all(*args,**kwargs)
-  
-def unbind_permission_from_subjects(permission,subjects):
-  """remove 1 permission from multiple subjects"""
-  pass
-  
-def unbind_permissions_from_subject(permissions,subject):
-  """remove many permissions from 1 subject"""
-  pass
 
     
       
