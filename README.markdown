@@ -6,21 +6,23 @@ Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
 
 ## TODO
 * General
-  * Work out which model properties should be read-only and enforce that by overriding the `__setattr__` method
-  * finish adding memcache to functions and revist the key generation method (hashing?)
   * setup some sort of automated performance profiling similar to gaeunit
   * add logging to everything
   * implement some way to hook into the existing authentication mechanism and create new identities for new users
   * do we play nice with openid?
-  * check to make sure the email attribute passed to identity actually looks like an email address
-  * re-evaluate `add_dependent` and `remove_dependent`
-  * would hashing all of the input args give better keys?
+  * hook into db.delete calls and make sure remove_dependants is called in that circumstance too.
   * what happens when someone makes changes to the user data via the admin console (googles not mine)?
-  * revist the membership_binding pre call hooks, theyre not efficient
-  * hook into delete calls and make sure remove_dependants is called in that circumstance too
-  * ensure that the hooks only get called when the objects in question is part of PGUserManager
+  * revisit the membership_binding pre call hooks, theyre not efficient
+  * ensure that the hooks only get called when the objects in question are part of PGUserManager
   
 * Completed
+  * DONE - add unit tests to test the email validator
+  * DONE - re-evaluate `add_dependent` and `remove_dependent`, they seem to work well
+  * DONE - check to make sure the email attribute passed to identity actually looks like an email address
+  * DONE - finish adding memcache to functions
+  * DONE - ensure that dependants are always added before values are put into memcache, better to have non-existant memcache keys than keys that never get removed because they have no dependents
+  * DONE - would hashing all of the input args give better keys? No, hashing produces human unreadable keys and actually takes slightly longer than simply concatenating strings.
+  * DONE - Work out which model properties should be read-only and enforce that by overriding the `__setattr__` method
   * DONE - when changing attributes on an identity get setattr to invalidate all dependent cache data (accomplished with the API hooks)
   * DONE - rewrite identity `__repr__` to deal with dynamic properties
   * DONE - make sure all models have methods to retrieve all of their dependants

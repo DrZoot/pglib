@@ -191,6 +191,51 @@ class ActiveIdentity(unittest.TestCase):
     i = identity.create_identity('user1@example.org',active=False)
     qr = identity.identity_query().filter('email','user1@example.org').get()
     self.assert_(isinstance(qr,models.Identity), 'Query for an inactive identitiy should return the identity')
+
+class EmailAddressValidity(unittest.TestCase):
+  def test_EmailValidation(self):
+    # test that the following email addresses are passed by the email validator (validator is from django, it doesnt deal with every valid email address)
+    valid_addresses = [
+    '"Abc\@def"@example.com',
+    # 'Fred\ Bloggs@example.com',
+    # 'Joe.\\Blow@example.com',
+    '"Abc@def"@example.com',
+    # '"Fred Bloggs"@example.com',
+    'user+mailbox@example.com',
+    'customer/department=shipping@example.com',
+    '$A12345@example.com',
+    '!def!xyz%abc@example.com',
+    '_somename@example.com',
+    # '""test\\blah""@example.com',
+    '\"test\\\rblah\"@example.com',
+    # '""test\""blah""@example.com',
+    'customer/department@example.com',
+    '_Yosemite.Sam@example.com',
+    '~@example.com',
+    # '""Austin@Powers""@example.com',
+    'Ima.Fool@example.com',
+    # '""Ima.Fool""@example.com',
+    # '""Ima Fool""@example.com'
+    ]
+    
+    invalid_addresses = [
+    'NotAnEmail',
+    '@NotAnEmail',
+    '""test\blah""@example.com',
+    '\"test\rblah\"@example.com',
+    '""test""blah""@example.com',
+    '.wooly@example.com',
+    'wo..oly@example.com',
+    'pootietang.@example.com',
+    '.@example.com',
+    'Ima Fool@example.com']
+    
+    for address in valid_addresses:
+      self.assert_(identity.create_identity(address), 'Syntactically valid addresses should pass through validation')
+    for address in invalid_addresses:
+      def create_invalid_identity():
+        return identity.create_identity(address)
+      self.assertRaises(exceptions.InvalidAddressFormat, create_invalid_identity)
     
       
     
