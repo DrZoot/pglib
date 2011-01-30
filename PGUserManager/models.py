@@ -22,13 +22,14 @@ along with PGUserManager.  If not, see <http://www.gnu.org/licenses/>.
 Models for PGUserManager
 """
 from google.appengine.ext import db
+from google.appengine.ext.db import polymodel
 from google.appengine.api import memcache
 from google.appengine.api import apiproxy_stub_map
 import utils
 import exceptions
 import logging
 
-class Identity (db.Expando):
+class Identity (polymodel.PolyModel):
   """
   --Description--
   Stores a users information and mapping to a user object. Also used to represent users as datastore objects.
@@ -38,7 +39,7 @@ class Identity (db.Expando):
   User : UserProperty : A user object.
   """
   # user = db.UserProperty()
-  # TODO: email should be read only after the object is created as there is no good way to make sure it is unique on subsequent puts
+  # TODO: email should be read-only after the object is created as there is no good way to make sure it is unique on subsequent puts
   email = db.StringProperty(required=True,validator=utils.validate_email_address)
   active = db.BooleanProperty(default=True)
   

@@ -27,20 +27,20 @@ import utils
 from google.appengine.api import users
 from google.appengine.api import memcache
 
-def create_identity(email_address,active=True,**kwargs):
+def create_identity(email_address,active=True,klass=models.Identity,**kwargs):
   """Creates a new identity in the datstore and returns the identity object or if the email has already been used raises an DuplicateValue exception"""
   key_name = email_address.lower()
-  if models.Identity.get_by_key_name(key_name):
+  if klass.get_by_key_name(key_name):
     raise exceptions.DuplicateValue(email_address)
   else:
-    key = models.Identity(key_name=key_name,email=email_address,active=active,**kwargs).put()
-    i = models.Identity.get(key)
+    key = klass(key_name=key_name,email=email_address,active=active,**kwargs).put()
+    i = klass.get(key)
     cache_key = email_address + '_identity'
     utils.add_dependants(cache_key,[i])
     memcache.set(cache_key,i)
     return i
 
-def get_identity(email_address,include_inactive=False):
+def get_identity(email_address,include_inactive=False,klass=models.Identity):
   """Given an email address try to return a datastore object for it using the email_address as a key_name"""
   cache_key = email_address + '_identity'
   cache_value = memcache.get(cache_key)
@@ -50,7 +50,7 @@ def get_identity(email_address,include_inactive=False):
     else:
       return None
   else:
-    i = models.Identity.get_by_key_name(email_address.lower())
+    i = klass.get_by_key_name(email_address.lower())
     if i:
       if i.active == True or (i.active == False and include_inactive == True):
         utils.add_dependants(cache_key,[i])
@@ -58,11 +58,11 @@ def get_identity(email_address,include_inactive=False):
         return i
     return None
   
-def identity_query(*args,**kwargs):
+def identity_query(klass=models.Identity,*args,**kwargs):
   """
   Equivalent to Identity.all(*args,**kwargs). Used here to shield Identity from having to be directly imported outside the module.
   """
-  return models.Identity.all(*args,**kwargs)
+  return klass.all(*args,**kwargs)
   
 def identity_for_current_user():
   """Return the identity for the currently logged on user or None"""

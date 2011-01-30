@@ -47,44 +47,44 @@ class FunctionTesting(unittest.TestCase):
     self.assert_(isinstance(j,models.Identity), 'Querying for an inactive user should return the inactive user (queries ignore active status)')
     self.assert_(j.active == False, 'The queried identity should be inactive (active=False)')
   
-  def test_SavingExtraProperties(self):
-    # save extra properties to an existing identity
-    i = identity.create_identity('user1@example.org')
-    i.int_prop = 47324
-    i.float_prop = 142.86323
-    i.bool_prop = False
-    i.string_prop = 'A testing string'
-    self.assert_(isinstance(i.put(),db.Key), 'Saving the identity with properties must return a key')
-    
-  def test_RetrievingExtraProperties(self):
-    # retrieve extra properties from an identity
-    i = identity.create_identity('user1@example.org')
-    i.int_prop = 47324
-    i.float_prop = 142.86323
-    i.bool_prop = False
-    i.string_prop = 'A testing string'
-    i.put()
-    j = identity.get_identity('user1@example.org')
-    self.assert_(j.int_prop == 47324, 'Identity int_prop must return same value (47324)')
-    self.assert_(j.float_prop == 142.86323, 'Identity float_prop must return same value (142.86323)')
-    self.assert_(j.bool_prop == False, 'Identity bool_prop must return same value (False)')
-    self.assert_(j.string_prop == 'A testing string', 'Identity string_prop must return same value (A testing string)')
+  # def test_SavingExtraProperties(self):
+  #   # save extra properties to an existing identity
+  #   i = identity.create_identity('user1@example.org')
+  #   i.int_prop = 47324
+  #   i.float_prop = 142.86323
+  #   i.bool_prop = False
+  #   i.string_prop = 'A testing string'
+  #   self.assert_(isinstance(i.put(),db.Key), 'Saving the identity with properties must return a key')
+  #   
+  # def test_RetrievingExtraProperties(self):
+  #   # retrieve extra properties from an identity
+  #   i = identity.create_identity('user1@example.org')
+  #   i.int_prop = 47324
+  #   i.float_prop = 142.86323
+  #   i.bool_prop = False
+  #   i.string_prop = 'A testing string'
+  #   i.put()
+  #   j = identity.get_identity('user1@example.org')
+  #   self.assert_(j.int_prop == 47324, 'Identity int_prop must return same value (47324)')
+  #   self.assert_(j.float_prop == 142.86323, 'Identity float_prop must return same value (142.86323)')
+  #   self.assert_(j.bool_prop == False, 'Identity bool_prop must return same value (False)')
+  #   self.assert_(j.string_prop == 'A testing string', 'Identity string_prop must return same value (A testing string)')
     
   def test_CreateIdentityQuery(self):
     # generate an identity query
     self.assert_(isinstance(identity.identity_query(),db.Query), 'identity.identity_query must return db.Query type')
     
-  def test_RetrieveIdentityUsingExpandoPropertyQuery(self):
-    # query the datastore for an identity based on a perviously added non-standard query
-    i = identity.create_identity('user1@example.org')
-    i.int_prop = 47324
-    i.float_prop = 142.86323
-    i.bool_prop = False
-    i.string_prop = 'A testing string'
-    i.put()
-    j = identity.identity_query().filter('int_prop',47324).get()
-    self.assert_(isinstance(j,models.Identity), 'Query for an optional property should return an identity object')
-    self.assert_(j.int_prop == 47324, 'Returned object should match query properties')
+  # def test_RetrieveIdentityUsingExpandoPropertyQuery(self):
+  #   # query the datastore for an identity based on a perviously added non-standard query
+  #   i = identity.create_identity('user1@example.org')
+  #   i.int_prop = 47324
+  #   i.float_prop = 142.86323
+  #   i.bool_prop = False
+  #   i.string_prop = 'A testing string'
+  #   i.put()
+  #   j = identity.identity_query().filter('int_prop',47324).get()
+  #   self.assert_(isinstance(j,models.Identity), 'Query for an optional property should return an identity object')
+  #   self.assert_(j.int_prop == 47324, 'Returned object should match query properties')
     
   def test_DeleteIdentity(self):
     # delete an identity

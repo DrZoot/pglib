@@ -14,6 +14,10 @@ Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
   * what happens when someone makes changes to the user data via the admin console (googles not mine)?
   * revisit the membership_binding pre call hooks, theyre not efficient
   * ensure that the hooks only get called when the objects in question are part of PGUserManager
+  * update docs
+  * write an admin interface to the user store
+  * reorganise all of the tests, add more testing for subclassing
+  * consider splitting BindingModel, and the contents of utils.py into a seperate module PGUtils
   
 * Completed
   * DONE - add unit tests to test the email validator
