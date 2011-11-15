@@ -1,11 +1,12 @@
-# PGUserManager
+# pglib.users
 ## Description
-PGUserManager is a library for Google App Engine that provides management for Users,Groups and Permissions. It is loosely based on the django.contrib.auth module. 
-PGUserManager does not involve itself with the actual authentication process of App Engine, it merely allows you to create groups and permissions and bind users to them.
+users is a library for Google App Engine that provides management for Users,Groups and Permissions. It is loosely based on the django.contrib.auth module. 
+users does not involve itself with the actual authentication process of App Engine, it merely allows you to create groups and permissions and bind users to them.
 Please send any feedback to p 'dot' gower 'at' gmail 'dot' com.
 
 ## TODO
 * General
+  * make all of the memcache code optional
   * setup some sort of automated performance profiling similar to gaeunit
   * add logging to everything
   * implement some way to hook into the existing authentication mechanism and create new identities for new users
