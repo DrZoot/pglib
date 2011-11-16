@@ -6,6 +6,8 @@ class Setting (db.polymodel)
   Base class for a key-value settings entry
   """
   key = db.StringProperty(required=True)
+  owner = db.UserProperty(auto_current_user_add=True)
+  is_global = db.BoolProperty(required=True, default=False)
   
 class StringSetting (Setting)
   """
@@ -25,5 +27,10 @@ class BoolSetting(Setting)
   """
   value = db.BoolProperty(required=True)
   
+class FloatSetting(Setting)
+  """
+  Holds a float value
+  """
+  value = db.FloatProperty(required=True)  
  
   
