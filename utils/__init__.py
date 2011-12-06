@@ -1,6 +1,7 @@
 # Basic util functions that I might need.
 
 from google.appengine.ext import db
+from constants import MAX_FETCH_LIMIT
 
 # Credit to Trent Mick on http://code.activestate.com/recipes/115417-subset-of-a-dictionary/
 def extract(d, keys):
@@ -22,3 +23,14 @@ def update_expando(model,dictionary):
   for k in dictionary.keys():
     setattr(model,k,dictionary[k])
   return model
+  
+def fetch_all(query):
+  # fetch all of the results for the given query
+  offset = 0
+  results = []
+  query_results = query.fetch(MAX_FETCH_LIMIT,offset)
+  while len(query_results) > 0:
+    results.extend(query_results)
+    offset = offset + MAX_FETCH_LIMIT
+    query_results = query.fetch(MAX_FETCH_LIMIT,offset)
+  return results
