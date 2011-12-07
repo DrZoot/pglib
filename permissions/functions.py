@@ -1,78 +1,84 @@
 import models
 import utils
-from constants import USE_MEMCACHE
-from constants import MAX_FETCH_LIMIT
 from google.appengine.api import memcache
 from google.appengine.api import users
+from google.appengine.ext import db
+import logging
 
-PERM_KEY_NAME=lambda action,obj: "permission_to_"+str(action)+"_on_"+str(obj) if obj else "permission_to_"+str(action)
-BIND_KEY_NAME=lambda perm,obj: "bind_"+str(perm)+"_to_"+str(obj)
-def get_permission(action,obj=None):
+
+def get(action,obj=None):
   """
   Retrieve the permission specified by the name and obj
   """
-  permission = memcache.get(PERM_KEY_NAME(action,obj))
-  if not permission:
-    permission = models.Permission.get_by_key_name(PERM_KEY_NAME(action,obj))
-    if permission:
-      memcache.set(PERM_KEY_NAME(action,obj),permission)
-  return permission
+  m = models.Permission.get_by_key_name(utils.key_name(action,obj))
+  if m is None:
+    m = models.Permission.all().filter('action',action).filter('obj',obj).get()
+  if m is not None:
+    return m
+  else:
+    return None
+    
 
-def create_permission(action,obj=None,description=""):
+def create(action,obj=None,desc=""):
   """
   Create a permission record for the given action and optional obj
-  Return the created permission record
+  Returns the permission instance that was created (NOT a key)
   """
-  permission = models.Permission.get_or_insert(PERM_KEY_NAME(action,obj),action=action,obj=obj,description=description)
-  memcache.set(PERM_KEY_NAME(action,obj),permission)
+  permission = models.Permission.get_or_insert(utils.key_name(action,obj),action=action,obj=obj,desc=desc)
   return permission
   
 # def create_permissions(*args,obj=None):
   
-def delete_permission(permission):
+def delete(permission):
   """
   Delete a permission record and all of its bindings / memcache records.
   """
-  #TODO: put this in a transaction
-  # Remove memcache objects
-  memcache.delete(permission.key().name())
-  # Remove bindings db objects
-  bindings_keys = utils.fetch_all(models.PermissionBinding.all(keys_only=True).filter('permission =',permission))
+  bindings_keys = utils.fetch_all(models.PermissionBinding.all(keys_only=True).filter('permission',permission))
   db.delete(bindings_keys)
   # Remove permission object itself
   permission.delete()
   
-def bind_permission(permission,*args):
+def bind(permission,*args):
   """
   Bind the given permission to the objs passed in args
   Return keys for all the bindings created
   """
+  permission = utils.object_to_key(permission)
+  args = [utils.object_to_key(arg) for arg in args]
   bindings = []
-  for obj in args:
-    bindings.push(models.PermissionBinding(permission,arg).put())
+  for arg in args:
+    bindings.append(models.PermissionBinding(permission=permission,obj=arg).put())
     # create memcache objects
-  memcache_bindings_key = permission.key().name()+"_bindings"
-  existing_bindings = memcache.get(memcache_bindings_key) or []
-  memcache.set(
   return bindings
   
   
-def unbind_permission(permission,*args):
+def unbind(permission,*args):
   """
-  Remove the permission binding from the given objs
+  Unbind the permission from the given objects, if no objects given unbind the permission from all objects (delete all bindings where permission=permission)
+  Returns the number of bindings that were removed or 0
   """
-  bindings_keys = utils.fetch_all(models.PermissionBinding.all(keys_only=True).filter('permission =',permission).filter('obj IN',args)
+  count = 0
+  if len(args) == 0:
+    bindings = utils.fetch_all(models.PermissionBinding.all(keys_only=True).filter('permission',permission))
+    count += len(bindings)
+    db.delete(bindings)
+  else:
+    for arg in args:
+      bindings = utils.fetch_all(models.PermissionBinding.all(keys_only=True).filter('permission',permission).filter('obj',arg))
+      count += len(bindings)
+      db.delete(bindings)
+  return count
+
+def has_permission(obj,permission):
+  # is there a binding from the obj to the permission
+  logging.info(obj)
+  logging.info(permission)
+  binding = models.PermissionBinding.all().filter('permission',permission).filter('obj',obj).get()
+  logging.info(binding)
+  if binding is None:
+    return False
+  else:
+    return True
     
+
   
-def user_has_permission(user,action,obj=None):
-  """
-  Does the given user have permission for the given action and optional obj?
-  returns true or false
-  """
-  pass
-  
-def user_holds_permission(user,action,obj=None):
-  """
-  returns a list of the users/groups who hold the given permission for the given obj
-  """
-  pass
